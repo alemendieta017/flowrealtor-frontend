@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AMENITIES, NEIGHBORHOODS } from "@/lib/types";
+import { AMENITIES, NEIGHBORHOODS_PY } from "@/lib/types";
 
 const propertyTypes = [
   { value: "casa", label: "Casa", icon: Home },
@@ -252,7 +252,7 @@ export function PropertyForm({
                     <SelectValue placeholder="Seleccionar barrio" />
                   </SelectTrigger>
                   <SelectContent>
-                    {NEIGHBORHOODS.map((n) => (
+                    {NEIGHBORHOODS_PY.map((n) => (
                       <SelectItem key={n} value={n}>
                         {n}
                       </SelectItem>

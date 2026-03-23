@@ -88,7 +88,7 @@ export interface SocialPost {
   id: string;
   propertyId: string;
   platform: "instagram" | "facebook";
-  type: "carousel" | "story";
+  type: "carousel" | "story" | "single";
   template: "modern" | "elegant" | "vibrant" | "minimal";
   images: { imageId: string; order: number }[];
   generatedImages?: { url: string; order: number }[];

@@ -361,6 +361,7 @@ export default function PropertyResultsPage() {
                 <Tabs defaultValue="carousel">
                   <TabsList>
                     <TabsTrigger value="carousel">Carousel (1:1)</TabsTrigger>
+                    <TabsTrigger value="single">Single (1:1)</TabsTrigger>
                     <TabsTrigger value="story">Story (9:16)</TabsTrigger>
                   </TabsList>
                   <TabsContent value="carousel">
@@ -403,6 +404,39 @@ export default function PropertyResultsPage() {
                         );
                       }
                       return <PendingCard label="Carousel en espera..." />;
+                    })()}
+                  </TabsContent>
+                  <TabsContent value="single">
+                    {(() => {
+                      const single = socialPosts.find((p) => p.type === "single");
+                      if (
+                        progress.social === "processing" ||
+                        single?.status === "processing"
+                      ) {
+                        return <LoadingCard label="Generando post..." />;
+                      }
+                      if (single?.status === "failed") {
+                        return (
+                          <ErrorCard
+                            label="Error generando post"
+                            onRetry={regenerateSocial}
+                          />
+                        );
+                      }
+                      if (single?.generatedImages?.length) {
+                        return (
+                          <div className="flex justify-center">
+                            <div className="w-full max-w-md aspect-square rounded-xl overflow-hidden">
+                              <img
+                                src={single.generatedImages[0].url}
+                                alt="Single Post"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+                      return <PendingCard label="Post en espera..." />;
                     })()}
                   </TabsContent>
                   <TabsContent value="story">
