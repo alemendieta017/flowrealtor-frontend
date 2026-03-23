@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,11 +21,12 @@ import {
   Upload,
   User,
   Palette,
-  Link,
-  Phone,
+  Link as LinkIcon,
+  CheckCircle2,
 } from "lucide-react";
+import { toast } from "sonner";
 
-const AGENT_ID = "demo-agent"; // TODO: replace with auth
+const AGENT_ID = "7bc227f4-4251-4ced-873c-29df8bd7229b"; // TODO: auth
 
 export default function SettingsPage() {
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -99,7 +102,7 @@ export default function SettingsPage() {
       if (agent) {
         updated = await agentsApi.update(AGENT_ID, payload);
       } else {
-        updated = await agentsApi.create(payload);
+        updated = await agentsApi.create({ ...payload, id: AGENT_ID });
       }
       setAgent(updated);
 
@@ -113,261 +116,318 @@ export default function SettingsPage() {
         setAgent(updated);
         setPhotoFile(null);
       }
+      toast.success("Configuración guardada correctamente");
+    } catch (error) {
+      toast.error("Error al guardar la configuración");
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Configuración del Agente</h1>
-        <p className="text-muted-foreground mt-1">
-          Esta información se usa para personalizar el brief PDF y las
-          publicaciones.
-        </p>
-      </div>
-
-      {/* Personal Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <User className="h-4 w-4" />
-            Información Personal
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Nombre completo</Label>
-            <Input
-              value={form.name}
-              onChange={(e) => update("name", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Inmobiliaria</Label>
-            <Input
-              value={form.companyName}
-              onChange={(e) => update("companyName", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(e) => update("email", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Teléfono / WhatsApp</Label>
-            <Input
-              value={form.phone}
-              onChange={(e) => update("phone", e.target.value)}
-              placeholder="+595 9xx xxx xxx"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Brand Assets */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Upload className="h-4 w-4" />
-            Logo y Foto
-          </CardTitle>
-          <CardDescription>
-            Aparecerán en el brief PDF y materiales de marketing
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <Label>Logo de la Inmobiliaria</Label>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <div className="flex-1 overflow-auto bg-muted/10">
+          {/* Top Bar for Consistency */}
+          <div className="border-b bg-card px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-10">
             <div className="flex items-center gap-3">
-              {agent?.logoUrl || logoFile ? (
-                <img
-                  src={
-                    logoFile ? URL.createObjectURL(logoFile) : agent!.logoUrl!
-                  }
-                  alt="Logo"
-                  className="h-16 w-16 rounded-lg object-contain border bg-white p-1"
-                />
-              ) : (
-                <div className="h-16 w-16 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted">
-                  <Upload className="h-5 w-5 text-muted-foreground" />
-                </div>
-              )}
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
-                />
-                <Button variant="outline" size="sm" asChild>
-                  <span>Cambiar logo</span>
-                </Button>
-              </label>
+              <SidebarTrigger className="-ml-1" />
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold">Configuración</h1>
+                <p className="hidden sm:block text-sm text-muted-foreground">
+                  FlowRealtor — Perfil de Agente
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="space-y-3">
-            <Label>Foto del Agente</Label>
-            <div className="flex items-center gap-3">
-              {agent?.photoUrl || photoFile ? (
-                <img
-                  src={
-                    photoFile
-                      ? URL.createObjectURL(photoFile)
-                      : agent!.photoUrl!
-                  }
-                  alt="Photo"
-                  className="h-16 w-16 rounded-full object-cover border"
-                />
-              ) : (
-                <div className="h-16 w-16 rounded-full border-2 border-dashed flex items-center justify-center bg-muted">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                </div>
-              )}
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-                />
-                <Button variant="outline" size="sm" asChild>
-                  <span>Cambiar foto</span>
-                </Button>
-              </label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Brand Colors */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Palette className="h-4 w-4" />
-            Colores de Marca
-          </CardTitle>
-          <CardDescription>
-            Se aplican automáticamente en el brief PDF
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label>Color Primario</Label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={form.primaryColor}
-                onChange={(e) => update("primaryColor", e.target.value)}
-                className="h-10 w-16 rounded cursor-pointer border"
-              />
-              <Input
-                value={form.primaryColor}
-                onChange={(e) => update("primaryColor", e.target.value)}
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Color Secundario / Acento</Label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={form.secondaryColor}
-                onChange={(e) => update("secondaryColor", e.target.value)}
-                className="h-10 w-16 rounded cursor-pointer border"
-              />
-              <Input
-                value={form.secondaryColor}
-                onChange={(e) => update("secondaryColor", e.target.value)}
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-          <div className="col-span-2">
-            <div
-              className="rounded-lg p-4"
-              style={{ background: form.primaryColor }}
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              size="sm"
+              className="gap-2"
             >
-              <span className="text-white font-semibold">
-                Vista previa del color primario
-              </span>
-              <span
-                className="ml-3 px-2 py-0.5 rounded text-xs font-bold"
-                style={{ background: form.secondaryColor, color: "#fff" }}
-              >
-                Acento
-              </span>
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Guardar Cambios</span>
+              <span className="sm:hidden">Guardar</span>
+            </Button>
+          </div>
+
+          <div className="p-4 sm:p-6 pb-12">
+            <div className="mx-auto max-w-4xl space-y-8">
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <>
+                  {/* Personal Info */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1">
+                      <h3 className="text-lg font-medium">Información Personal</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Tus datos de contacto principales.
+                      </p>
+                    </div>
+                    <Card className="lg:col-span-2">
+                      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 sm:p-6">
+                        <div className="space-y-2">
+                          <Label className="text-sm">Nombre completo</Label>
+                          <Input
+                            value={form.name}
+                            onChange={(e) => update("name", e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">Inmobiliaria</Label>
+                          <Input
+                            value={form.companyName}
+                            onChange={(e) => update("companyName", e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">Email</Label>
+                          <Input
+                            type="email"
+                            value={form.email}
+                            onChange={(e) => update("email", e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">Teléfono / WhatsApp</Label>
+                          <Input
+                            value={form.phone}
+                            onChange={(e) => update("phone", e.target.value)}
+                            placeholder="+595 9xx xxx xxx"
+                            className="text-sm"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <hr className="border-border" />
+
+                  {/* Brand Assets */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1">
+                      <h3 className="text-lg font-medium">Logo y Foto</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Tu imagen profesional en los materiales generados.
+                      </p>
+                    </div>
+                    <Card className="lg:col-span-2">
+                      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-8 p-4 sm:p-6">
+                        <div className="space-y-3">
+                          <Label className="text-sm">Logo de la Inmobiliaria</Label>
+                          <div className="flex items-center gap-4">
+                            <div className="relative h-20 w-20 rounded-lg border flex items-center justify-center bg-card overflow-hidden shrink-0">
+                              {agent?.logoUrl || logoFile ? (
+                                <img
+                                  src={
+                                    logoFile
+                                      ? URL.createObjectURL(logoFile)
+                                      : agent!.logoUrl!
+                                  }
+                                  alt="Logo"
+                                  className="h-full w-full object-contain p-1"
+                                />
+                              ) : (
+                                <Upload className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </div>
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) =>
+                                  setLogoFile(e.target.files?.[0] ?? null)
+                                }
+                              />
+                              <Button variant="outline" size="sm" className="text-xs">
+                                Cambiar
+                              </Button>
+                            </label>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-sm">Foto de Perfil</Label>
+                          <div className="flex items-center gap-4">
+                            <div className="h-20 w-20 rounded-full border flex items-center justify-center bg-card overflow-hidden shrink-0">
+                              {agent?.photoUrl || photoFile ? (
+                                <img
+                                  src={
+                                    photoFile
+                                      ? URL.createObjectURL(photoFile)
+                                      : agent!.photoUrl!
+                                  }
+                                  alt="Photo"
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <User className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </div>
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) =>
+                                  setPhotoFile(e.target.files?.[0] ?? null)
+                                }
+                              />
+                              <Button variant="outline" size="sm" className="text-xs">
+                                Cambiar
+                              </Button>
+                            </label>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <hr className="border-border" />
+
+                  {/* Colors */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1">
+                      <h3 className="text-lg font-medium">Colores de Marca</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Definí la identidad visual de tus PDFs y videos.
+                      </p>
+                    </div>
+                    <Card className="lg:col-span-2">
+                      <CardContent className="space-y-6 p-4 sm:p-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label className="text-sm">Color Primario</Label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={form.primaryColor}
+                                onChange={(e) => update("primaryColor", e.target.value)}
+                                className="h-10 w-16 rounded cursor-pointer border shadow-sm"
+                              />
+                              <Input
+                                value={form.primaryColor}
+                                onChange={(e) => update("primaryColor", e.target.value)}
+                                className="font-mono text-xs sm:text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm">Color de Acento</Label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={form.secondaryColor}
+                                onChange={(e) =>
+                                  update("secondaryColor", e.target.value)
+                                }
+                                className="h-10 w-16 rounded cursor-pointer border shadow-sm"
+                              />
+                              <Input
+                                value={form.secondaryColor}
+                                onChange={(e) =>
+                                  update("secondaryColor", e.target.value)
+                                }
+                                className="font-mono text-xs sm:text-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="rounded-xl border p-4 bg-background overflow-hidden">
+                          <div
+                            className="rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm"
+                            style={{
+                              background: `linear-gradient(135deg, ${form.primaryColor}10, ${form.primaryColor}20)`,
+                              borderColor: `${form.primaryColor}30`,
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="h-10 w-10 rounded-full flex items-center justify-center text-white shrink-0"
+                                style={{ background: form.primaryColor }}
+                              >
+                                <CheckCircle2 className="h-5 w-5" />
+                              </div>
+                              <div className="font-semibold text-sm sm:text-base truncate" style={{ color: form.primaryColor }}>
+                                {form.companyName || "Tu Inmobiliaria"}
+                              </div>
+                            </div>
+                            <div
+                              className="px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-bold text-white shadow-md uppercase tracking-wider"
+                              style={{ background: form.secondaryColor }}
+                            >
+                              ACCIÓN
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <hr className="border-border" />
+
+                  {/* Social */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1">
+                      <h3 className="text-lg font-medium">Redes Sociales</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Enlaces que se incluirán en tus materiales.
+                      </p>
+                    </div>
+                    <Card className="lg:col-span-2">
+                      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 sm:p-6">
+                        {[
+                          {
+                            key: "instagram",
+                            label: "Instagram",
+                            placeholder: "@tuinmobiliaria",
+                          },
+                          {
+                            key: "facebook",
+                            label: "Facebook",
+                            placeholder: "facebook.com/tuinmobiliaria",
+                          },
+                          {
+                            key: "tiktok",
+                            label: "TikTok",
+                            placeholder: "@tuinmobiliaria",
+                          },
+                          {
+                            key: "whatsapp",
+                            label: "WhatsApp",
+                            placeholder: "+595 9xx xxx xxx",
+                          },
+                        ].map(({ key, label, placeholder }) => (
+                          <div key={key} className="space-y-2">
+                            <Label className="text-sm">{label}</Label>
+                            <Input
+                              value={(form as Record<string, string>)[key]}
+                              onChange={(e) => update(key, e.target.value)}
+                              placeholder={placeholder}
+                              className="text-sm"
+                            />
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Social Links */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Link className="h-4 w-4" />
-            Redes Sociales
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
-          {[
-            {
-              key: "instagram",
-              label: "Instagram",
-              placeholder: "@tuinmobiliaria",
-            },
-            {
-              key: "facebook",
-              label: "Facebook",
-              placeholder: "facebook.com/tuinmobiliaria",
-            },
-            { key: "tiktok", label: "TikTok", placeholder: "@tuinmobiliaria" },
-            {
-              key: "whatsapp",
-              label: "WhatsApp",
-              placeholder: "+595 9xx xxx xxx",
-            },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key} className="space-y-2">
-              <Label>{label}</Label>
-              <Input
-                value={(form as Record<string, string>)[key]}
-                onChange={(e) => update(key, e.target.value)}
-                placeholder={placeholder}
-              />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        size="lg"
-        className="w-full"
-      >
-        {saving ? (
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        ) : (
-          <Save className="h-4 w-4 mr-2" />
-        )}
-        Guardar configuración
-      </Button>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

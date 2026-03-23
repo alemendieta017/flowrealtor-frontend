@@ -74,6 +74,7 @@ export interface PropertyContent {
 export interface Brief {
   id: string;
   propertyId: string;
+  property?: Property;
   template: "modern" | "elegant" | "corporate";
   colors?: { primary: string; secondary: string };
   coverImageId?: string;
@@ -87,6 +88,7 @@ export interface Brief {
 export interface SocialPost {
   id: string;
   propertyId: string;
+  property?: Property;
   platform: "instagram" | "facebook";
   type: "carousel" | "story" | "single";
   template: "modern" | "elegant" | "vibrant" | "minimal";
@@ -100,6 +102,7 @@ export interface SocialPost {
 export interface Video {
   id: string;
   propertyId: string;
+  property?: Property;
   format: "quick" | "narrated";
   voiceoverEnabled: boolean;
   voiceGender: "male" | "female";

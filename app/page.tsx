@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,34 +96,50 @@ function PropertyCard({ property }: { property: Property }) {
 
 export default function DashboardPage() {
   const [properties, setProperties] = useState<Property[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [draftCount, setDraftCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Fetch only recent 6 for display
     propertiesApi
-      .list(AGENT_ID)
-      .then(setProperties)
+      .list(AGENT_ID, { limit: 6 })
+      .then((res) => {
+        setProperties(res.data);
+        setTotalCount(res.meta.total);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    // Fetch counts (simplified for MVP)
+    propertiesApi
+      .list(AGENT_ID, { limit: 100 })
+      .then((res) => {
+        setActiveCount(res.data.filter((p) => p.status === "active").length);
+        setDraftCount(res.data.filter((p) => p.status === "draft").length);
+      })
+      .catch(() => {});
   }, []);
 
   const stats = [
     {
       label: "Propiedades activas",
-      value: properties.filter((p) => p.status === "active").length,
+      value: activeCount,
       icon: Home,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
     {
       label: "En proceso",
-      value: properties.filter((p) => p.status === "draft").length,
+      value: draftCount,
       icon: TrendingUp,
       color: "text-amber-600",
       bg: "bg-amber-50",
     },
     {
       label: "Total propiedades",
-      value: properties.length,
+      value: totalCount,
       icon: Building2,
       color: "text-green-600",
       bg: "bg-green-50",
@@ -136,24 +152,28 @@ export default function DashboardPage() {
       <SidebarInset>
         <div className="flex-1 overflow-auto">
           {/* Top bar */}
-          <div className="border-b bg-card px-6 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                FlowRealtor — Bienvenido
-              </p>
+          <div className="border-b bg-card px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="-ml-1" />
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold">Dashboard</h1>
+                <p className="hidden sm:block text-sm text-muted-foreground">
+                  FlowRealtor — Bienvenido
+                </p>
+              </div>
             </div>
             <Link href="/properties/new">
-              <Button className="gap-2">
+              <Button size="sm" className="gap-2">
                 <Plus className="h-4 w-4" />
-                Nueva Propiedad
+                <span className="hidden sm:inline">Nueva Propiedad</span>
+                <span className="sm:hidden">Nuevo</span>
               </Button>
             </Link>
           </div>
 
-          <div className="p-6 space-y-8 max-w-7xl mx-auto">
+          <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {stats.map((stat) => (
                 <Card key={stat.label}>
                   <CardContent className="p-4 flex items-center gap-4">
@@ -161,7 +181,7 @@ export default function DashboardPage() {
                       <stat.icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">{stat.value}</p>
+                      <p className="text-xl sm:text-2xl font-bold">{stat.value}</p>
                       <p className="text-sm text-muted-foreground">
                         {stat.label}
                       </p>
@@ -172,7 +192,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick actions */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Link href="/properties/new">
                 <Card className="hover:shadow-md transition-all cursor-pointer border-primary/20 hover:border-primary">
                   <CardContent className="p-4 flex items-center gap-3">
@@ -234,7 +254,7 @@ export default function DashboardPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : properties.length === 0 ? (
-                <div className="border-2 border-dashed rounded-xl p-12 text-center">
+                <div className="border-2 border-dashed rounded-xl p-8 sm:p-12 text-center">
                   <Building2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                   <h3 className="font-semibold text-lg">
                     Aún no tenés propiedades
@@ -251,7 +271,7 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {properties.map((p) => (
                     <PropertyCard key={p.id} property={p} />
                   ))}

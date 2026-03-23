@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Home,
   Building2,
@@ -32,12 +34,11 @@ const mainNavItems = [
     title: "Dashboard",
     icon: Home,
     href: "/",
-    isActive: true,
   },
   {
     title: "Propiedades",
     icon: Building2,
-    href: "/propiedades",
+    href: "/properties",
   },
   {
     title: "Briefs (PDF)",
@@ -60,28 +61,34 @@ const secondaryNavItems = [
   {
     title: "Configuración",
     icon: Settings,
-    href: "/configuracion",
+    href: "/settings",
   },
   {
     title: "Ayuda",
     icon: HelpCircle,
-    href: "/ayuda",
+    href: "/help",
   },
 ];
 
 export function AppSidebar() {
+  const pathname = usePathname();
+
   return (
     <Sidebar className="border-r border-border">
       <SidebarHeader className="p-4">
-        <Logo size="md" />
+        <Link href="/">
+          <Logo size="md" />
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>
         <div className="px-3 py-2">
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-            <Plus className="h-4 w-4" />
-            Nueva Propiedad
-          </Button>
+          <Link href="/properties/new">
+            <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+              <Plus className="h-4 w-4" />
+              Nueva Propiedad
+            </Button>
+          </Link>
         </div>
 
         <SidebarGroup>
@@ -92,13 +99,19 @@ export function AppSidebar() {
             <SidebarMenu>
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    isActive={item.isActive}
-                    className="gap-3 px-3 py-2 transition-colors hover:bg-secondary"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
+                  <Link href={item.href} passHref legacyBehavior>
+                    <SidebarMenuButton
+                      isActive={
+                        item.href === "/"
+                          ? pathname === "/"
+                          : pathname.startsWith(item.href)
+                      }
+                      className="gap-3 px-3 py-2 transition-colors hover:bg-secondary"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </Link>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -115,10 +128,19 @@ export function AppSidebar() {
             <SidebarMenu>
               {secondaryNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton className="gap-3 px-3 py-2 transition-colors hover:bg-secondary">
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
+                  <Link href={item.href} passHref legacyBehavior>
+                    <SidebarMenuButton
+                      isActive={
+                        item.href === "/"
+                          ? pathname === "/"
+                          : pathname.startsWith(item.href)
+                      }
+                      className="gap-3 px-3 py-2 transition-colors hover:bg-secondary"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </Link>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

@@ -169,21 +169,22 @@ export default function PropertyResultsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card px-6 py-4 sticky top-0 z-10">
+      <div className="border-b bg-card px-4 sm:px-6 py-4 sticky top-0 z-20">
         <div className="mx-auto max-w-6xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push("/")}
+              className="flex-shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="text-lg font-bold">
+            <div className="overflow-hidden">
+              <h1 className="text-base sm:text-lg font-bold truncate">
                 {content?.title || property?.neighborhood || "Propiedad"}
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-[10px] sm:text-sm text-muted-foreground truncate">
                 {property?.city} —{" "}
                 {property?.operationType === "venta"
                   ? "En Venta"
@@ -191,69 +192,71 @@ export default function PropertyResultsPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {allProcessing && (
-              <Badge variant="outline" className="gap-1.5">
+              <Badge variant="outline" className="gap-1.5 text-[10px] sm:text-xs">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Generando...
+                <span className="hidden sm:inline">Generando...</span>
               </Badge>
             )}
             {allDone && (
-              <Badge className="bg-green-500 gap-1.5">
+              <Badge className="bg-green-500 gap-1.5 text-[10px] sm:text-xs">
                 <Check className="h-3 w-3" />
-                ¡Todo listo!
+                <span className="hidden sm:inline">¡Todo listo!</span>
               </Badge>
             )}
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl px-6 py-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 sm:py-6">
         <Tabs defaultValue="brief">
           <TabsList className="grid grid-cols-3 w-full mb-6">
-            <TabsTrigger value="brief" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Brief PDF
+            <TabsTrigger value="brief" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="truncate">Brief</span>
               <StatusDot status={brief?.status} />
             </TabsTrigger>
-            <TabsTrigger value="social" className="gap-2">
-              <Image className="h-4 w-4" />
-              Redes Sociales
+            <TabsTrigger value="social" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Image className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="truncate">Redes</span>
               <StatusDot status={socialPosts[0]?.status} />
             </TabsTrigger>
-            <TabsTrigger value="video" className="gap-2">
-              <VideoIcon className="h-4 w-4" />
-              Video / Reel
+            <TabsTrigger value="video" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <VideoIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="truncate">Video</span>
               <StatusDot status={video?.status} />
             </TabsTrigger>
           </TabsList>
 
           {/* ========== TAB: BRIEF ========== */}
           <TabsContent value="brief">
-            <div className="grid grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               {/* PDF Preview */}
-              <div className="col-span-3 space-y-4">
+              <div className="lg:col-span-3 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-lg">Ficha Técnica PDF</h2>
+                  <h2 className="font-semibold text-base sm:text-lg">Ficha Técnica PDF</h2>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={regenerateBrief}
                       disabled={!!regenerating}
+                      className="text-xs"
                     >
                       {regenerating === "brief" ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <RefreshCw className="h-4 w-4 mr-1" />
+                        <RefreshCw className="h-3.5 w-3.5 sm:mr-1" />
                       )}
-                      Regenerar
+                      <span className="hidden sm:inline">Regenerar</span>
                     </Button>
                     {brief?.pdfUrl && (
-                      <Button size="sm" asChild>
+                      <Button size="sm" asChild className="text-xs">
                         <a href={brief.pdfUrl} target="_blank" rel="noreferrer">
-                          <Download className="h-4 w-4 mr-1" />
-                          Descargar
+                          <Download className="h-3.5 w-3.5 sm:mr-1" />
+                          <span className="hidden sm:inline">Descargar</span>
+                          <span className="sm:hidden">PDF</span>
                         </a>
                       </Button>
                     )}
@@ -264,7 +267,7 @@ export default function PropertyResultsPage() {
                 progress.brief === "processing" ? (
                   <LoadingCard label="Generando PDF..." />
                 ) : brief?.status === "completed" && brief.pdfUrl ? (
-                  <div className="border rounded-xl overflow-hidden bg-muted/30 aspect-[0.7]">
+                  <div className="border rounded-xl overflow-hidden bg-muted/30 aspect-[0.7] w-full">
                     <iframe
                       src={brief.pdfUrl}
                       className="w-full h-full"
@@ -277,13 +280,13 @@ export default function PropertyResultsPage() {
                     onRetry={regenerateBrief}
                   />
                 ) : (
-                  <PendingCard label="PDF en espera de generación..." />
+                  <PendingCard label="PDF en espera..." />
                 )}
               </div>
 
               {/* Config panel */}
-              <div className="col-span-2 space-y-4">
-                <h3 className="font-semibold">Contenido del Brief</h3>
+              <div className="lg:col-span-2 space-y-4">
+                <h3 className="font-semibold text-sm sm:text-base">Contenido del Brief</h3>
                 <EditableField
                   label="Título Gancho"
                   value={editingContent.title ?? content?.title ?? ""}
@@ -338,31 +341,32 @@ export default function PropertyResultsPage() {
 
           {/* ========== TAB: SOCIAL ========== */}
           <TabsContent value="social">
-            <div className="grid grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               {/* Social preview */}
-              <div className="col-span-3 space-y-4">
+              <div className="lg:col-span-3 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-lg">Piezas para Redes</h2>
+                  <h2 className="font-semibold text-base sm:text-lg">Piezas para Redes</h2>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={regenerateSocial}
                     disabled={!!regenerating}
+                    className="text-xs"
                   >
                     {regenerating === "social" ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <RefreshCw className="h-4 w-4 mr-1" />
+                      <RefreshCw className="h-3.5 w-3.5 sm:mr-1" />
                     )}
-                    Regenerar
+                    <span className="hidden sm:inline">Regenerar</span>
                   </Button>
                 </div>
 
                 <Tabs defaultValue="carousel">
-                  <TabsList>
-                    <TabsTrigger value="carousel">Carousel (1:1)</TabsTrigger>
-                    <TabsTrigger value="single">Single (1:1)</TabsTrigger>
-                    <TabsTrigger value="story">Story (9:16)</TabsTrigger>
+                  <TabsList className="w-full sm:w-auto">
+                    <TabsTrigger value="carousel" className="flex-1 sm:flex-none text-xs">Carousel</TabsTrigger>
+                    <TabsTrigger value="single" className="flex-1 sm:flex-none text-xs">Post</TabsTrigger>
+                    <TabsTrigger value="story" className="flex-1 sm:flex-none text-xs">Story</TabsTrigger>
                   </TabsList>
                   <TabsContent value="carousel">
                     {(() => {
@@ -385,13 +389,13 @@ export default function PropertyResultsPage() {
                       }
                       if (carousel?.generatedImages?.length) {
                         return (
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {carousel.generatedImages
                               .sort((a, b) => a.order - b.order)
                               .map((img, idx) => (
                                 <div
                                   key={idx}
-                                  className="aspect-square rounded-lg overflow-hidden"
+                                  className="aspect-square rounded-lg overflow-hidden border"
                                 >
                                   <img
                                     src={img.url}
@@ -426,7 +430,7 @@ export default function PropertyResultsPage() {
                       if (single?.generatedImages?.length) {
                         return (
                           <div className="flex justify-center">
-                            <div className="w-full max-w-md aspect-square rounded-xl overflow-hidden">
+                            <div className="w-full max-w-sm aspect-square rounded-xl overflow-hidden border shadow-sm">
                               <img
                                 src={single.generatedImages[0].url}
                                 alt="Single Post"
@@ -459,7 +463,7 @@ export default function PropertyResultsPage() {
                       if (story?.generatedImages?.length) {
                         return (
                           <div className="flex justify-center">
-                            <div className="w-48 aspect-9/16 rounded-xl overflow-hidden">
+                            <div className="w-48 sm:w-56 aspect-[9/16] rounded-xl overflow-hidden border shadow-sm">
                               <img
                                 src={story.generatedImages[0].url}
                                 alt="Story"
@@ -476,8 +480,8 @@ export default function PropertyResultsPage() {
               </div>
 
               {/* Copy panel */}
-              <div className="col-span-2 space-y-4">
-                <h3 className="font-semibold">Copy para Redes</h3>
+              <div className="lg:col-span-2 space-y-4">
+                <h3 className="font-semibold text-sm sm:text-base">Copy para Redes</h3>
                 <EditableField
                   label="Caption"
                   value={editingContent.caption ?? content?.caption ?? ""}
@@ -492,12 +496,12 @@ export default function PropertyResultsPage() {
                   rows={4}
                 />
                 <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">
+                  <Label className="text-xs text-muted-foreground">
                     Hashtags
                   </Label>
                   <div className="flex flex-wrap gap-1.5 p-2 border rounded-lg min-h-12 bg-muted/30">
                     {(content?.hashtags ?? []).map((h) => (
-                      <Badge key={h} variant="secondary" className="text-xs">
+                      <Badge key={h} variant="secondary" className="text-[10px]">
                         #{h}
                       </Badge>
                     ))}
@@ -505,7 +509,7 @@ export default function PropertyResultsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full"
+                    className="w-full text-xs"
                     onClick={() =>
                       copyToClipboard(
                         (content?.hashtags ?? []).map((h) => `#${h}`).join(" "),
@@ -536,14 +540,16 @@ export default function PropertyResultsPage() {
 
                 <div className="pt-2 space-y-2">
                   <h4 className="text-sm font-medium">Publicar</h4>
-                  <Button variant="outline" className="w-full gap-2" size="sm">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Publicar en Instagram
-                  </Button>
-                  <Button variant="outline" className="w-full gap-2" size="sm">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Publicar en Facebook
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="gap-2 text-xs" size="sm">
+                      <ExternalLink className="h-3 w-3" />
+                      Instagram
+                    </Button>
+                    <Button variant="outline" className="gap-2 text-xs" size="sm">
+                      <ExternalLink className="h-3 w-3" />
+                      Facebook
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -551,30 +557,32 @@ export default function PropertyResultsPage() {
 
           {/* ========== TAB: VIDEO ========== */}
           <TabsContent value="video">
-            <div className="grid grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               {/* Video preview */}
-              <div className="col-span-3 space-y-4">
+              <div className="lg:col-span-3 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-lg">Video Reel</h2>
+                  <h2 className="font-semibold text-base sm:text-lg">Video Reel</h2>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={regenerateVideo}
                       disabled={!!regenerating}
+                      className="text-xs"
                     >
                       {regenerating === "video" ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <RefreshCw className="h-4 w-4 mr-1" />
+                        <RefreshCw className="h-3.5 w-3.5 sm:mr-1" />
                       )}
-                      Regenerar
+                      <span className="hidden sm:inline">Regenerar</span>
                     </Button>
                     {video?.videoUrl && (
-                      <Button size="sm" asChild>
+                      <Button size="sm" asChild className="text-xs">
                         <a href={video.videoUrl} download>
-                          <Download className="h-4 w-4 mr-1" />
-                          Descargar
+                          <Download className="h-3.5 w-3.5 sm:mr-1" />
+                          <span className="hidden sm:inline">Descargar</span>
+                          <span className="sm:hidden">Video</span>
                         </a>
                       </Button>
                     )}
@@ -584,19 +592,19 @@ export default function PropertyResultsPage() {
                 {(progress.video === "processing" ||
                   video?.status === "processing") && (
                   <div className="space-y-3">
-                    <LoadingCard label="Renderizando video con IA..." />
+                    <LoadingCard label="Renderizando video..." />
                     <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider">
                         <span>Progreso</span>
                         <span>{progress.videoProgress}%</span>
                       </div>
-                      <Progress value={progress.videoProgress} />
+                      <Progress value={progress.videoProgress} className="h-1" />
                     </div>
                   </div>
                 )}
 
                 {video?.status === "completed" && video.videoUrl && (
-                  <div className="rounded-xl overflow-hidden bg-black aspect-9/16 max-h-[500px] mx-auto">
+                  <div className="rounded-xl overflow-hidden bg-black aspect-[9/16] max-h-[500px] w-full max-w-sm mx-auto shadow-xl">
                     <video
                       src={video.videoUrl}
                       controls
@@ -608,14 +616,14 @@ export default function PropertyResultsPage() {
 
                 {video?.status === "completed" && video.audioUrl && (
                   <Card>
-                    <CardContent className="p-4">
-                      <Label className="text-sm text-muted-foreground">
+                    <CardContent className="p-3 sm:p-4">
+                      <Label className="text-xs text-muted-foreground">
                         Audio generado
                       </Label>
                       <audio
                         controls
                         src={video.audioUrl}
-                        className="w-full mt-2"
+                        className="w-full mt-2 h-10"
                       />
                     </CardContent>
                   </Card>
@@ -629,17 +637,17 @@ export default function PropertyResultsPage() {
                 )}
 
                 {!video && progress.video === "idle" && (
-                  <PendingCard label="Video en espera de generación..." />
+                  <PendingCard label="Video en espera..." />
                 )}
               </div>
 
               {/* Script panel */}
-              <div className="col-span-2 space-y-4">
-                <h3 className="font-semibold">Guion del Video</h3>
-                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+              <div className="lg:col-span-2 space-y-4">
+                <h3 className="font-semibold text-sm sm:text-base">Guion del Video</h3>
+                <div className="space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto pr-1">
                   {(content?.videoScript?.scenes ?? []).map((scene, idx) => (
                     <div key={idx} className="flex gap-2">
-                      <div className="shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary mt-1">
+                      <div className="shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-[10px] font-bold text-primary mt-1">
                         {idx + 1}
                       </div>
                       <div className="flex-1">
@@ -665,9 +673,9 @@ export default function PropertyResultsPage() {
                             }));
                           }}
                           rows={2}
-                          className="text-sm resize-none"
+                          className="text-xs sm:text-sm resize-none"
                         />
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
                           {scene.suggestedDuration}s
                         </p>
                       </div>
@@ -678,7 +686,7 @@ export default function PropertyResultsPage() {
                   <Button
                     onClick={saveContent}
                     disabled={saving}
-                    className="w-full"
+                    className="w-full text-sm"
                   >
                     {saving ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -692,6 +700,7 @@ export default function PropertyResultsPage() {
         </Tabs>
       </div>
     </div>
+
   );
 }
 

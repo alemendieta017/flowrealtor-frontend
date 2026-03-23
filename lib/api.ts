@@ -11,6 +11,24 @@ import type {
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  type?: string;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}/api${path}`, {
     headers: { "Content-Type": "application/json", ...options?.headers },
@@ -18,9 +36,23 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || `HTTP ${res.status}`);
+    const msg = Array.isArray(error.message)
+      ? error.message.join(", ")
+      : error.message || `HTTP ${res.status}`;
+    throw new Error(msg);
   }
   return res.json();
+}
+
+function toQueryString(params: Record<string, any>): string {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.append(key, value.toString());
+    }
+  });
+  const str = searchParams.toString();
+  return str ? `?${str}` : "";
 }
 
 // ---- AGENTS ----
@@ -53,8 +85,10 @@ export const agentsApi = {
 
 // ---- PROPERTIES ----
 export const propertiesApi = {
-  list: (agentId: string) =>
-    request<Property[]>(`/properties?agentId=${agentId}`),
+  list: (agentId: string, params?: PaginationParams) =>
+    request<PaginatedResponse<Property>>(
+      `/properties${toQueryString({ agentId, ...params })}`,
+    ),
   get: (id: string) => request<Property>(`/properties/${id}`),
   create: (data: Partial<Property>) =>
     request<Property>("/properties", {
@@ -133,6 +167,10 @@ export const listingsApi = {
 
 // ---- BRIEFS ----
 export const briefsApi = {
+  list: (agentId: string, params?: PaginationParams) =>
+    request<PaginatedResponse<Brief>>(
+      `/briefs${toQueryString({ agentId, ...params })}`,
+    ),
   generate: (
     propertyId: string,
     config?: {
@@ -152,6 +190,10 @@ export const briefsApi = {
 
 // ---- SOCIAL ----
 export const socialApi = {
+  list: (agentId: string, params?: PaginationParams) =>
+    request<PaginatedResponse<SocialPost>>(
+      `/social${toQueryString({ agentId, ...params })}`,
+    ),
   generate: (
     propertyId: string,
     config?: {
@@ -170,6 +212,10 @@ export const socialApi = {
 
 // ---- VIDEO ----
 export const videosApi = {
+  list: (agentId: string, params?: PaginationParams) =>
+    request<PaginatedResponse<Video>>(
+      `/videos${toQueryString({ agentId, ...params })}`,
+    ),
   generate: (
     propertyId: string,
     config?: {

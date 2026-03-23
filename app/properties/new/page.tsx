@@ -314,25 +314,27 @@ export default function NewPropertyPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card px-6 py-4">
+      <div className="border-b bg-card px-4 sm:px-6 py-4 sticky top-0 z-20">
         <div className="mx-auto max-w-4xl flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold">Nueva Propiedad</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-lg sm:text-xl font-bold">Nueva Propiedad</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Paso {step} de {STEPS.length}: {STEPS[step - 1].label}
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
-            <X className="h-4 w-4 mr-1" /> Cancelar
+            <X className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Cancelar</span>
           </Button>
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="border-b bg-card px-6 pb-4">
-        <div className="mx-auto max-w-4xl">
+      {/* Progress bar and Steps */}
+      <div className="border-b bg-card pb-4 sticky top-[65px] sm:top-[73px] z-10">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 pt-2">
           <Progress value={progressPct} className="h-1.5 mb-3" />
-          <div className="flex gap-1 overflow-x-auto">
+        </div>
+        <div className="mx-auto max-w-4xl">
+          <div className="flex gap-2 overflow-x-auto px-4 sm:px-6 py-1 no-scrollbar">
             {STEPS.map((s) => {
               const Icon = s.icon;
               return (
@@ -340,7 +342,7 @@ export default function NewPropertyPage() {
                   key={s.id}
                   disabled
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0",
                     step === s.id
                       ? "bg-primary text-primary-foreground"
                       : step > s.id
@@ -358,7 +360,7 @@ export default function NewPropertyPage() {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-4xl px-6 py-8">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8">
         {error && (
           <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
             {error}
@@ -397,21 +399,22 @@ export default function NewPropertyPage() {
         {step === 7 && <Step7 form={form} update={update} />}
 
         {/* Navigation */}
-        <div className="flex justify-between mt-8">
+        <div className="flex justify-between mt-8 pb-10">
           <Button
             variant="outline"
             onClick={goPrev}
             disabled={step === 1 || loading}
+            size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'sm' : 'default'}
           >
             <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
           </Button>
 
           {step < STEPS.length ? (
-            <Button onClick={goNext} disabled={loading}>
+            <Button onClick={goNext} disabled={loading} size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'sm' : 'default'}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {step === 4 ? "Generando con IA..." : "Procesando..."}
+                  {step === 4 ? "Generando..." : "..."}
                 </>
               ) : (
                 <>
@@ -423,17 +426,18 @@ export default function NewPropertyPage() {
             <Button
               onClick={handleGenerate}
               disabled={loading}
+              size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'sm' : 'default'}
               className="bg-gradient-to-r from-primary to-primary/80 shadow-lg"
             >
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generando Listado...
+                  Generando...
                 </>
               ) : (
                 <>
                   <Zap className="h-4 w-4 mr-2" />
-                  Generar Listado Profesional
+                  Generar Listado
                 </>
               )}
             </Button>
@@ -441,6 +445,7 @@ export default function NewPropertyPage() {
         </div>
       </div>
     </div>
+
   );
 }
 
@@ -455,8 +460,8 @@ function Step1({
 }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Datos Básicos</h2>
-      <div className="grid grid-cols-2 gap-4">
+      <h2 className="text-xl sm:text-2xl font-bold">Datos Básicos</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Tipo de operación</Label>
           <Select
@@ -545,9 +550,9 @@ function Step2({
 }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Características</h2>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 space-y-2">
+      <h2 className="text-xl sm:text-2xl font-bold">Características</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="sm:col-span-2 space-y-2">
           <Label>Precio</Label>
           <Input
             type="number"
@@ -615,8 +620,8 @@ function Step3({
 }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Amenidades</h2>
-      <p className="text-muted-foreground">
+      <h2 className="text-xl sm:text-2xl font-bold">Amenidades</h2>
+      <p className="text-sm text-muted-foreground">
         Seleccioná todas las comodidades que tiene la propiedad
       </p>
       <div className="flex flex-wrap gap-2">
@@ -626,7 +631,7 @@ function Step3({
             type="button"
             onClick={() => toggleAmenity(a)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
+              "px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border transition-all",
               form.amenities.includes(a)
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-background text-foreground border-border hover:border-primary",
@@ -641,11 +646,11 @@ function Step3({
       </div>
       {form.amenities.length > 0 && (
         <div className="flex flex-wrap gap-1 p-3 bg-muted rounded-lg">
-          <span className="text-sm text-muted-foreground mr-2">
+          <span className="text-xs sm:text-sm text-muted-foreground mr-2">
             Seleccionadas:
           </span>
           {form.amenities.map((a) => (
-            <Badge key={a} variant="secondary">
+            <Badge key={a} variant="secondary" className="text-[10px] sm:text-xs">
               {a}
             </Badge>
           ))}
@@ -664,8 +669,8 @@ function Step4({
 }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Configuración del Video</h2>
-      <div className="grid grid-cols-2 gap-6">
+      <h2 className="text-xl sm:text-2xl font-bold">Configuración del Video</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <Card
           onClick={() => update("videoFormat", "quick")}
           className={cn(
@@ -674,8 +679,8 @@ function Step4({
           )}
         >
           <CardContent className="p-4">
-            <div className="font-semibold">⚡ Reel Rápido</div>
-            <div className="text-sm text-muted-foreground mt-1">
+            <div className="font-semibold text-sm sm:text-base">⚡ Reel Rápido</div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
               15-30 segundos, dinámico, ideal para Instagram
             </div>
           </CardContent>
@@ -688,14 +693,14 @@ function Step4({
           )}
         >
           <CardContent className="p-4">
-            <div className="font-semibold">🎙️ Tour Narrado</div>
-            <div className="text-sm text-muted-foreground mt-1">
+            <div className="font-semibold text-sm sm:text-base">🎙️ Tour Narrado</div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
               60-90 segundos, detallado, con voz en off completa
             </div>
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Estilo del video</Label>
           <Select
@@ -736,15 +741,16 @@ function Step4({
           checked={form.voiceoverEnabled}
           onCheckedChange={(v) => update("voiceoverEnabled", v)}
         />
-        <Label htmlFor="voiceover">Activar voz en off con IA</Label>
+        <Label htmlFor="voiceover" className="text-sm">Activar voz en off con IA</Label>
       </div>
       <div className="space-y-2">
         <Label>Contexto adicional para la IA (opcional)</Label>
         <Textarea
           value={form.additionalContext}
           onChange={(e) => update("additionalContext", e.target.value)}
-          placeholder="Ej: Resaltar que es ideal para inversión, que el barrio tiene excelente conectividad..."
+          placeholder="Ej: Resaltar que es ideal para inversión..."
           rows={2}
+          className="text-sm"
         />
       </div>
     </div>
@@ -766,12 +772,12 @@ function Step5({
 }) {
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-4">
+      <div className="flex flex-col items-center justify-center py-12 sm:py-16 gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-lg font-medium">
+        <p className="text-base sm:text-lg font-medium text-center px-4">
           La IA está generando el guion y contenido...
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Esto puede tomar unos segundos
         </p>
       </div>
@@ -789,36 +795,36 @@ function Step5({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Guion Generado por IA</h2>
-        <p className="text-muted-foreground mt-1">
+        <h2 className="text-xl sm:text-2xl font-bold">Guion Generado por IA</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
           Podés editar el texto de cada escena y asignar la foto que querés para
           ese momento del video.
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <Card className="bg-primary/5">
           <CardContent className="p-3">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Título
             </div>
-            <div className="font-semibold text-sm mt-1">{content.title}</div>
+            <div className="font-semibold text-xs sm:text-sm mt-1 truncate">{content.title}</div>
           </CardContent>
         </Card>
         <Card className="bg-primary/5">
           <CardContent className="p-3">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Hook
             </div>
-            <div className="font-semibold text-sm mt-1">{content.hook}</div>
+            <div className="font-semibold text-xs sm:text-sm mt-1 truncate">{content.hook}</div>
           </CardContent>
         </Card>
         <Card className="bg-primary/5">
           <CardContent className="p-3">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Escenas
             </div>
-            <div className="font-semibold text-sm mt-1">
+            <div className="font-semibold text-xs sm:text-sm mt-1">
               {content.videoScript.scenes.length} escenas
             </div>
           </CardContent>
@@ -828,26 +834,29 @@ function Step5({
       <div className="space-y-4">
         {form.editedScenes.map((scene, idx) => (
           <Card key={idx}>
-            <CardContent className="p-4 flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-bold text-primary">
-                {idx + 1}
+            <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row gap-4">
+              <div className="flex items-center gap-3 sm:block">
+                <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-bold text-primary">
+                  {idx + 1}
+                </div>
+                <div className="sm:hidden text-xs font-semibold text-muted-foreground">Escena {idx + 1}</div>
               </div>
               <div className="flex-1 space-y-2">
                 <Textarea
                   value={scene.text}
                   onChange={(e) => onUpdateScene(idx, e.target.value)}
-                  rows={2}
+                  rows={3}
                   className="text-sm resize-none"
                   placeholder="Texto narrado para esta escena..."
                 />
-                <div className="text-xs text-muted-foreground">
+                <div className="text-[10px] sm:text-xs text-muted-foreground">
                   Duración sugerida: {scene.suggestedDuration}s
                 </div>
               </div>
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 flex justify-center">
                 <label
                   className={cn(
-                    "flex flex-col items-center justify-center w-20 h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+                    "flex flex-col items-center justify-center w-24 h-24 sm:w-20 sm:h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
                     form.sceneImages[idx]
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary",
@@ -871,7 +880,7 @@ function Step5({
                   ) : (
                     <>
                       <Upload className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground mt-1 text-center">
+                      <span className="text-[10px] text-muted-foreground mt-1 text-center">
                         Foto
                       </span>
                     </>
@@ -906,8 +915,8 @@ function Step6({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Imágenes Adicionales</h2>
-      <p className="text-muted-foreground">
+      <h2 className="text-xl sm:text-2xl font-bold">Imágenes Adicionales</h2>
+      <p className="text-xs sm:text-sm text-muted-foreground">
         Subí fotos adicionales de la propiedad para el brief PDF y las
         publicaciones en redes.
       </p>
@@ -915,7 +924,7 @@ function Step6({
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
-        className="border-2 border-dashed rounded-xl p-8 text-center hover:border-primary transition-colors cursor-pointer"
+        className="border-2 border-dashed rounded-xl p-6 sm:p-8 text-center hover:border-primary transition-colors cursor-pointer"
       >
         <label className="cursor-pointer block">
           <input
@@ -929,15 +938,15 @@ function Step6({
             }}
           />
           <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="font-medium">Arrastrá o hacé clic para subir fotos</p>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="font-medium text-sm sm:text-base">Arrastrá o hacé clic para subir fotos</p>
+          <p className="text-xs text-muted-foreground mt-1">
             JPG, PNG, WEBP — máx. 20 fotos
           </p>
         </label>
       </div>
 
       {files.length > 0 && (
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {files.map((file, idx) => (
             <div key={idx} className="relative group aspect-square">
               <img
@@ -968,12 +977,12 @@ function Step7({
 }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Datos del Agente</h2>
-      <p className="text-muted-foreground">
+      <h2 className="text-xl sm:text-2xl font-bold">Datos del Agente</h2>
+      <p className="text-xs sm:text-sm text-muted-foreground">
         Estos datos aparecerán en el PDF y las publicaciones. Podés modificarlos
         para esta propiedad.
       </p>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Nombre completo</Label>
           <Input
@@ -1013,15 +1022,15 @@ function Step7({
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-2">
             <Zap className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-primary">
+            <span className="font-semibold text-primary text-sm sm:text-base">
               Listo para generar
             </span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Al presionar &quot;Generar Listado Profesional&quot;, la IA
             producirá automáticamente:
           </p>
-          <ul className="mt-2 text-sm space-y-1">
+          <ul className="mt-2 text-[10px] sm:text-xs space-y-1">
             <li>📄 Ficha técnica profesional en PDF</li>
             <li>📱 Carousel y Story para Instagram</li>
             <li>🎬 Video reel con voz en off</li>
