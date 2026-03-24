@@ -7,6 +7,7 @@ import type {
   SocialPost,
   Video,
   ListingStatus,
+  Template,
 } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -36,10 +37,14 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
-    const msg = Array.isArray(error.message)
-      ? error.message.join(", ")
-      : error.message || `HTTP ${res.status}`;
-    throw new Error(msg);
+    let msgStr = error.message;
+    if (msgStr && typeof msgStr === 'object' && !Array.isArray(msgStr)) {
+      msgStr = msgStr.message || JSON.stringify(msgStr);
+    }
+    const finalMsg = Array.isArray(msgStr)
+      ? msgStr.join(", ")
+      : msgStr || `HTTP ${res.status}`;
+    throw new Error(finalMsg);
   }
   return res.json();
 }
@@ -116,11 +121,16 @@ export const propertiesApi = {
     request<void>(`/properties/${id}/images/${imageId}`, {
       method: "DELETE",
     }),
-  reorderImages: (id: string, images: { id: string; order: number }[]) =>
+    reorderImages: (id: string, images: { id: string; order: number }[]) =>
     request<void>(`/properties/${id}/images/reorder`, {
       method: "PATCH",
       body: JSON.stringify({ images }),
     }),
+};
+
+// ---- TEMPLATES ----
+export const templatesApi = {
+  getAll: () => request<Template[]>("/templates"),
 };
 
 // ---- CONTENT ----

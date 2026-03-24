@@ -80,15 +80,17 @@ export function AppSidebar() {
           <Logo size="md" />
         </Link>
       </SidebarHeader>
-
       <SidebarContent>
         <div className="px-3 py-2">
-          <Link href="/properties/new">
-            <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+          <Button
+            asChild
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+          >
+            <Link href="/properties/new">
               <Plus className="h-4 w-4" />
               Nueva Propiedad
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         <SidebarGroup>
@@ -99,19 +101,20 @@ export function AppSidebar() {
             <SidebarMenu>
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <Link href={item.href} passHref legacyBehavior>
-                    <SidebarMenuButton
-                      isActive={
-                        item.href === "/"
-                          ? pathname === "/"
-                          : pathname.startsWith(item.href)
-                      }
-                      className="gap-3 px-3 py-2 transition-colors hover:bg-secondary"
-                    >
+                  <SidebarMenuButton
+                    asChild
+                    isActive={
+                      item.href === "/"
+                        ? pathname === "/"
+                        : pathname.startsWith(item.href)
+                    }
+                    className="gap-3 px-3 py-2 transition-colors hover:bg-secondary"
+                  >
+                    <Link href={item.href}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </Link>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -128,26 +131,26 @@ export function AppSidebar() {
             <SidebarMenu>
               {secondaryNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <Link href={item.href} passHref legacyBehavior>
-                    <SidebarMenuButton
-                      isActive={
-                        item.href === "/"
-                          ? pathname === "/"
-                          : pathname.startsWith(item.href)
-                      }
-                      className="gap-3 px-3 py-2 transition-colors hover:bg-secondary"
-                    >
+                  <SidebarMenuButton
+                    asChild
+                    isActive={
+                      item.href === "/"
+                        ? pathname === "/"
+                        : pathname.startsWith(item.href)
+                    }
+                    className="gap-3 px-3 py-2 transition-colors hover:bg-secondary"
+                  >
+                    <Link href={item.href}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </Link>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
       <SidebarFooter className="p-4">
         <div className="rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 p-4 border border-primary/30">
           <div className="flex items-center gap-2 mb-2">

@@ -162,13 +162,13 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            <Link href="/properties/new">
-              <Button size="sm" className="gap-2">
+            <Button asChild size="sm" className="gap-2">
+              <Link href="/properties/new">
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Nueva Propiedad</span>
                 <span className="sm:hidden">Nuevo</span>
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
 
           <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
@@ -242,11 +242,11 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Mis Propiedades</h2>
-                <Link href="/properties/new">
-                  <Button variant="outline" size="sm" className="gap-1">
+                <Button asChild variant="outline" size="sm" className="gap-1">
+                  <Link href="/properties/new">
                     <Plus className="h-3.5 w-3.5" /> Agregar
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
 
               {loading ? (
@@ -263,12 +263,12 @@ export default function DashboardPage() {
                     Cargá tu primera propiedad y dejá que la IA genere el
                     contenido automáticamente.
                   </p>
-                  <Link href="/properties/new">
-                    <Button>
+                  <Button asChild>
+                    <Link href="/properties/new">
                       <Plus className="h-4 w-4 mr-2" />
                       Crear primera propiedad
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

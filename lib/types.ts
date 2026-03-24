@@ -57,6 +57,14 @@ export interface VideoScene {
   suggestedDuration: number;
 }
 
+export interface Template {
+  id: string;
+  name: string;
+  label: string;
+  type: "PDF" | "SOCIAL" | "VIDEO_REEL";
+  previewUrl: string;
+}
+
 export interface PropertyContent {
   id: string;
   propertyId: string;

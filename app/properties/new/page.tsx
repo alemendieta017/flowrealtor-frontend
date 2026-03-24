@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,13 +24,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { propertiesApi, contentApi, listingsApi, agentsApi } from "@/lib/api";
+import { propertiesApi, contentApi, listingsApi, agentsApi, templatesApi } from "@/lib/api";
 import {
   AMENITIES,
   NEIGHBORHOODS_PY,
   type PropertyContent,
   type Property,
   type Agent,
+  type Template,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -83,6 +85,9 @@ interface FormData {
   amenities: string[];
   description: string;
   // Step 4
+  selectedPdfTemplateId: string;
+  selectedSocialTemplateId: string;
+  selectedVideoTemplateId: string;
   videoFormat: string;
   voiceoverEnabled: boolean;
   voiceGender: string;
@@ -118,6 +123,9 @@ const initialForm: FormData = {
   levels: "",
   amenities: [],
   description: "",
+  selectedPdfTemplateId: "",
+  selectedSocialTemplateId: "",
+  selectedVideoTemplateId: "",
   videoFormat: "quick",
   voiceoverEnabled: true,
   voiceGender: "female",
@@ -138,8 +146,39 @@ export default function NewPropertyPage() {
   const [form, setForm] = useState<FormData>(initialForm);
   const [propertyId, setPropertyId] = useState<string | null>(null);
   const [content, setContent] = useState<PropertyContent | null>(null);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadTemplates = async () => {
+      setIsLoadingTemplates(true);
+      try {
+        const data = await templatesApi.getAll();
+        if (mounted) {
+          setTemplates(data);
+          if (data.length > 0) {
+            setForm((f) => ({
+              ...f,
+              selectedPdfTemplateId: f.selectedPdfTemplateId || data.find((t) => t.type === "PDF")?.id || "",
+              selectedSocialTemplateId: f.selectedSocialTemplateId || data.find((t) => t.type.startsWith("SOCIAL"))?.id || "",
+              selectedVideoTemplateId: f.selectedVideoTemplateId || data.find((t) => t.type === "VIDEO_REEL")?.id || "",
+            }));
+          }
+        }
+      } catch (e) {
+        console.error("Error loading templates", e);
+      } finally {
+        if (mounted) setIsLoadingTemplates(false);
+      }
+    };
+    loadTemplates();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const update = (key: keyof FormData, value: unknown) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -199,7 +238,6 @@ export default function NewPropertyPage() {
         propertyId: pid,
         videoFormat: form.videoFormat,
         videoStyle: form.videoStyle,
-        voiceGender: form.voiceGender,
         additionalContext: form.additionalContext || undefined,
       });
       setContent(generated);
@@ -270,7 +308,10 @@ export default function NewPropertyPage() {
       // Kick off listing generation
       await listingsApi.generate({
         propertyId,
+        briefConfig: { templateId: form.selectedPdfTemplateId || undefined },
+        socialConfig: { templateId: form.selectedSocialTemplateId || undefined },
         videoConfig: {
+          templateId: form.selectedVideoTemplateId || undefined,
           format: form.videoFormat,
           voiceoverEnabled: form.voiceoverEnabled,
           voiceGender: form.voiceGender,
@@ -372,7 +413,7 @@ export default function NewPropertyPage() {
         {step === 3 && (
           <Step3 form={form} toggleAmenity={toggleAmenity} update={update} />
         )}
-        {step === 4 && <Step4 form={form} update={update} />}
+        {step === 4 && <Step4 form={form} update={update} templates={templates} isLoading={isLoadingTemplates} />}
         {step === 5 && (
           <Step5
             form={form}
@@ -663,94 +704,147 @@ function Step3({
 function Step4({
   form,
   update,
+  templates,
+  isLoading,
 }: {
   form: FormData;
   update: (k: keyof FormData, v: unknown) => void;
+  templates: Template[];
+  isLoading: boolean;
 }) {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-sm text-muted-foreground">Cargando Estudio Creativo...</span>
+      </div>
+    );
+  }
+
+  const pdfTemplates = templates.filter(t => t.type === "PDF");
+  const socialTemplates = templates.filter(t => t.type.startsWith("SOCIAL"));
+  const videoTemplates = templates.filter(t => t.type === "VIDEO_REEL");
+
+  const TemplateGrid = ({ items, selectedId, onSelect }: { items: Template[], selectedId: string, onSelect: (id: string) => void }) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      {items.map(t => (
+        <Card
+          key={t.id}
+          onClick={() => onSelect(t.id)}
+          className={cn(
+            "cursor-pointer overflow-hidden transition-all duration-200 group relative",
+            selectedId === t.id ? "ring-2 ring-primary ring-offset-2" : "hover:border-primary/50"
+          )}
+        >
+          <div className="aspect-[4/5] bg-muted relative">
+            {t.previewUrl ? (
+              <img 
+                src={t.previewUrl} 
+                alt={t.name}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect fill="%23f1f1f1" width="100" height="100"/><text fill="%23999" font-family="sans-serif" font-size="10" x="50" y="50" text-anchor="middle">No Preview</text></svg>';
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                <Image className="h-8 w-8 opacity-20" />
+              </div>
+            )}
+            {selectedId === t.id && (
+              <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-sm">
+                <Check className="h-4 w-4" />
+              </div>
+            )}
+          </div>
+          <div className="p-3 bg-card border-t">
+            <h4 className="text-xs sm:text-sm font-medium leading-none truncate">{t.label || t.name.toUpperCase().replace(/_/g, " ")}</h4>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">{t.type.replace("SOCIAL_", "").replace("VIDEO_", "")}</p>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold">Configuración del Video</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        <Card
-          onClick={() => update("videoFormat", "quick")}
-          className={cn(
-            "cursor-pointer transition-all",
-            form.videoFormat === "quick" ? "ring-2 ring-primary" : "",
-          )}
-        >
-          <CardContent className="p-4">
-            <div className="font-semibold text-sm sm:text-base">⚡ Reel Rápido</div>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
-              15-30 segundos, dinámico, ideal para Instagram
+      <div className="mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold">Estudio Creativo</h2>
+        <p className="text-sm text-muted-foreground">Seleccioná los diseños premium para cada formato publicitario.</p>
+      </div>
+
+      <Tabs defaultValue="video" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="video">🎥 Videos</TabsTrigger>
+          <TabsTrigger value="social">📱 Redes</TabsTrigger>
+          <TabsTrigger value="pdf">📄 Brief PDFs</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="video" className="space-y-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
+          <TemplateGrid 
+            items={videoTemplates} 
+            selectedId={form.selectedVideoTemplateId} 
+            onSelect={(id) => update("selectedVideoTemplateId", id)} 
+          />
+          <div className="border-t pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Formato de Video</Label>
+              <Select value={form.videoFormat} onValueChange={(v) => update("videoFormat", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quick">Rápido (TikTok / Reels cortos)</SelectItem>
+                  <SelectItem value="narrated">Tour Narrado (YouTube / IG TV)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-        <Card
-          onClick={() => update("videoFormat", "narrated")}
-          className={cn(
-            "cursor-pointer transition-all",
-            form.videoFormat === "narrated" ? "ring-2 ring-primary" : "",
-          )}
-        >
-          <CardContent className="p-4">
-            <div className="font-semibold text-sm sm:text-base">🎙️ Tour Narrado</div>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
-              60-90 segundos, detallado, con voz en off completa
+            <div className="space-y-2">
+              <Label>Voz en off con IA</Label>
+              <Select value={form.voiceGender} onValueChange={(v) => update("voiceGender", v)} disabled={!form.voiceoverEnabled}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="female">Femenina (Nova)</SelectItem>
+                  <SelectItem value="male">Masculina (Onyx)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Estilo del video</Label>
-          <Select
-            value={form.videoStyle}
-            onValueChange={(v) => update("videoStyle", v)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="professional">Profesional</SelectItem>
-              <SelectItem value="luxury">Lujo Premium</SelectItem>
-              <SelectItem value="energetic">Energético / Moderno</SelectItem>
-              <SelectItem value="elegant">Elegante</SelectItem>
-              <SelectItem value="modern">Contemporáneo</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Voz en off</Label>
-          <Select
-            value={form.voiceGender}
-            onValueChange={(v) => update("voiceGender", v)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="female">Femenina (Nova)</SelectItem>
-              <SelectItem value="male">Masculina (Onyx)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <Checkbox
-          id="voiceover"
-          checked={form.voiceoverEnabled}
-          onCheckedChange={(v) => update("voiceoverEnabled", v)}
-        />
-        <Label htmlFor="voiceover" className="text-sm">Activar voz en off con IA</Label>
-      </div>
-      <div className="space-y-2">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Checkbox id="voiceover" checked={form.voiceoverEnabled} onCheckedChange={(v) => update("voiceoverEnabled", v)} />
+                <span className="text-sm">Activar narración automática</span>
+              </Label>
+              <div className="text-xs text-muted-foreground ml-6">
+                El guion será generado inteligentemente en el próximo paso.
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="social" className="space-y-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
+          <TemplateGrid 
+            items={socialTemplates} 
+            selectedId={form.selectedSocialTemplateId} 
+            onSelect={(id) => update("selectedSocialTemplateId", id)} 
+          />
+        </TabsContent>
+
+        <TabsContent value="pdf" className="space-y-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
+          <TemplateGrid 
+            items={pdfTemplates} 
+            selectedId={form.selectedPdfTemplateId} 
+            onSelect={(id) => update("selectedPdfTemplateId", id)} 
+          />
+        </TabsContent>
+        
+      </Tabs>
+
+      <div className="space-y-2 border-t pt-6">
         <Label>Contexto adicional para la IA (opcional)</Label>
         <Textarea
           value={form.additionalContext}
           onChange={(e) => update("additionalContext", e.target.value)}
-          placeholder="Ej: Resaltar que es ideal para inversión..."
+          placeholder="Ej: Resaltar que es ideal para Airbnb, mencionar que se aceptan mascotas..."
           rows={2}
-          className="text-sm"
+          className="text-sm bg-muted/50 focus:bg-background transition-colors"
         />
       </div>
     </div>

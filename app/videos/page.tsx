@@ -50,7 +50,7 @@ export default function VideosPage() {
       header: "Formato",
       accessor: (v: Video) => (
         <Badge variant="outline" className="capitalize text-[10px] sm:text-xs">
-          {v.config.format === "quick" ? "Reel Rápido" : "Tour Narrado"}
+          {v.format === "quick" ? "Reel Rápido" : "Tour Narrado"}
         </Badge>
       ),
     },

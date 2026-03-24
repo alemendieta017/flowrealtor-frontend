@@ -94,11 +94,11 @@ export default function PropertiesPage() {
       header: "Acciones",
       accessor: (p: Property) => (
         <div className="flex items-center gap-2">
-          <Link href={`/properties/${p.id}`}>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+            <Link href={`/properties/${p.id}`}>
               <Eye className="h-4 w-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       ),
       className: "text-right",
@@ -121,13 +121,13 @@ export default function PropertiesPage() {
                 </p>
               </div>
             </div>
-            <Link href="/properties/new">
-              <Button size="sm" className="gap-2">
+            <Button asChild size="sm" className="gap-2">
+              <Link href="/properties/new">
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Nueva Propiedad</span>
                 <span className="sm:hidden">Nuevo</span>
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
 
           <div className="p-4 sm:p-6 max-w-7xl mx-auto">
