@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,13 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,44 +28,43 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
-import { propertiesApi, contentApi, listingsApi, agentsApi, templatesApi } from "@/lib/api";
+import { propertiesApi, contentApi, listingsApi, templatesApi } from "@/lib/api";
 import {
   AMENITIES,
   NEIGHBORHOODS_PY,
+  formatPrice,
   type PropertyContent,
   type Property,
-  type Agent,
   type Template,
+  type PropertyImage,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
   Home,
-  MapPin,
+  Image as ImageIcon,
   Video,
-  FileText,
-  Image,
-  User,
-  Zap,
+  Sparkles,
   ChevronRight,
   ChevronLeft,
   Loader2,
   Check,
   Upload,
-  Edit3,
   X,
+  GripVertical,
+  MousePointer2,
+  Info,
 } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import Handlebars from "handlebars";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const AGENT_ID = "7bc227f4-4251-4ced-873c-29df8bd7229b"; // TODO: replace with auth context
 
 const STEPS = [
-  { id: 1, label: "Datos Básicos", icon: Home },
-  { id: 2, label: "Características", icon: MapPin },
-  { id: 3, label: "Amenidades", icon: Check },
-  { id: 4, label: "Config. Video", icon: Video },
-  { id: 5, label: "Guion IA", icon: FileText },
-  { id: 6, label: "Imágenes", icon: Image },
-  { id: 7, label: "Agente", icon: User },
+  { id: 1, label: "Detalles", icon: Home },
+  { id: 2, label: "Galería", icon: ImageIcon },
+  { id: 3, label: "IA y Guion", icon: Video },
+  { id: 4, label: "Estudio Creativo", icon: Sparkles },
 ];
 
 interface FormData {
@@ -71,7 +75,6 @@ interface FormData {
   city: string;
   neighborhood: string;
   address: string;
-  // Step 2
   priceAmount: string;
   currency: string;
   bedrooms: string;
@@ -81,28 +84,30 @@ interface FormData {
   builtArea: string;
   unbuiltArea: string;
   levels: string;
-  // Step 3
   amenities: string[];
   description: string;
+  // Step 2
+  uploadedImages: PropertyImage[];
+  // Step 3
+  videoFormat: string;
+  voiceoverEnabled: boolean;
+  voiceGender: string;
+  editedScenes: { text: string; suggestedDuration: number; imageId: string | null }[];
   // Step 4
   selectedPdfTemplateId: string;
   selectedSocialTemplateId: string;
   selectedVideoTemplateId: string;
-  videoFormat: string;
-  voiceoverEnabled: boolean;
-  voiceGender: string;
-  videoStyle: string;
-  additionalContext: string;
-  // Step 5 (populated from API)
-  editedScenes: { text: string; suggestedDuration: number }[];
-  sceneImages: (File | null)[];
-  // Step 6
-  generalImages: File[];
-  // Step 7
   agentName: string;
   agentPhone: string;
   agentEmail: string;
   agentCompany: string;
+  primaryColor: string;
+  secondaryColor: string;
+  // AI Editable Text
+  title: string;
+  hook: string;
+  body: string;
+  caption: string;
 }
 
 const initialForm: FormData = {
@@ -123,21 +128,24 @@ const initialForm: FormData = {
   levels: "",
   amenities: [],
   description: "",
-  selectedPdfTemplateId: "",
-  selectedSocialTemplateId: "",
-  selectedVideoTemplateId: "",
+  uploadedImages: [],
   videoFormat: "quick",
   voiceoverEnabled: true,
   voiceGender: "female",
-  videoStyle: "professional",
-  additionalContext: "",
   editedScenes: [],
-  sceneImages: [],
-  generalImages: [],
-  agentName: "",
-  agentPhone: "",
-  agentEmail: "",
-  agentCompany: "",
+  selectedPdfTemplateId: "",
+  selectedSocialTemplateId: "",
+  selectedVideoTemplateId: "",
+  agentName: "Juan Pérez",
+  agentPhone: "+595 999 123456",
+  agentEmail: "juan@flowrealtor.com",
+  agentCompany: "FlowRealtor",
+  primaryColor: "#2563eb",
+  secondaryColor: "#1e40af",
+  title: "",
+  hook: "",
+  body: "",
+  caption: "",
 };
 
 export default function NewPropertyPage() {
@@ -147,52 +155,33 @@ export default function NewPropertyPage() {
   const [propertyId, setPropertyId] = useState<string | null>(null);
   const [content, setContent] = useState<PropertyContent | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     const loadTemplates = async () => {
-      setIsLoadingTemplates(true);
       try {
         const data = await templatesApi.getAll();
-        if (mounted) {
+        if (mounted && data.length > 0) {
           setTemplates(data);
-          if (data.length > 0) {
-            setForm((f) => ({
-              ...f,
-              selectedPdfTemplateId: f.selectedPdfTemplateId || data.find((t) => t.type === "PDF")?.id || "",
-              selectedSocialTemplateId: f.selectedSocialTemplateId || data.find((t) => t.type.startsWith("SOCIAL"))?.id || "",
-              selectedVideoTemplateId: f.selectedVideoTemplateId || data.find((t) => t.type === "VIDEO_REEL")?.id || "",
-            }));
-          }
+          setForm((f) => ({
+            ...f,
+            selectedPdfTemplateId: data.find((t) => t.type === "PDF")?.id || "",
+            selectedSocialTemplateId: data.find((t) => t.type.startsWith("SOCIAL"))?.id || "",
+            selectedVideoTemplateId: data.find((t) => t.type === "VIDEO_REEL")?.id || "",
+          }));
         }
       } catch (e) {
         console.error("Error loading templates", e);
-      } finally {
-        if (mounted) setIsLoadingTemplates(false);
       }
     };
     loadTemplates();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  const update = (key: keyof FormData, value: unknown) =>
-    setForm((f) => ({ ...f, [key]: value }));
+  const update = (key: keyof FormData, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
 
-  const toggleAmenity = (a: string) => {
-    setForm((f) => ({
-      ...f,
-      amenities: f.amenities.includes(a)
-        ? f.amenities.filter((x) => x !== a)
-        : [...f.amenities, a],
-    }));
-  };
-
-  // Step 3 -> 4: Create property in backend
   const handleCreateProperty = async () => {
     if (propertyId) return; // already created
     setLoading(true);
@@ -206,13 +195,11 @@ export default function NewPropertyPage() {
         city: form.city,
         neighborhood: form.neighborhood,
         address: form.address,
-        priceAmount: Number(form.priceAmount),
+        priceAmount: Number(form.priceAmount) || 0,
         currency: form.currency as "USD" | "PYG",
         bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
         bathrooms: form.bathrooms ? Number(form.bathrooms) : undefined,
-        parkingSpaces: form.parkingSpaces
-          ? Number(form.parkingSpaces)
-          : undefined,
+        parkingSpaces: form.parkingSpaces ? Number(form.parkingSpaces) : undefined,
         totalArea: form.totalArea ? Number(form.totalArea) : undefined,
         builtArea: form.builtArea ? Number(form.builtArea) : undefined,
         unbuiltArea: form.unbuiltArea ? Number(form.unbuiltArea) : undefined,
@@ -229,7 +216,6 @@ export default function NewPropertyPage() {
     }
   };
 
-  // Step 4 -> 5: Generate content with LLM
   const handleGenerateContent = async (pid: string) => {
     setLoading(true);
     setError(null);
@@ -237,17 +223,20 @@ export default function NewPropertyPage() {
       const generated = await contentApi.generate({
         propertyId: pid,
         videoFormat: form.videoFormat,
-        videoStyle: form.videoStyle,
-        additionalContext: form.additionalContext || undefined,
+        voiceGender: form.voiceGender,
       });
       setContent(generated);
       setForm((f) => ({
         ...f,
-        editedScenes: generated.videoScript.scenes.map((s) => ({
+        title: generated.title,
+        hook: generated.hook,
+        body: generated.body,
+        caption: generated.caption,
+        editedScenes: generated.videoScript.scenes.map((s, i) => ({
           text: s.text,
           suggestedDuration: s.suggestedDuration,
+          imageId: f.uploadedImages[i % f.uploadedImages.length]?.id || null,
         })),
-        sceneImages: new Array(generated.videoScript.scenes.length).fill(null),
       }));
     } catch (e) {
       setError(String(e));
@@ -257,10 +246,13 @@ export default function NewPropertyPage() {
     }
   };
 
-  // Save edited script to backend
   const handleSaveScript = async () => {
     if (!propertyId || !content) return;
     await contentApi.update(propertyId, {
+      title: form.title,
+      hook: form.hook,
+      body: form.body,
+      caption: form.caption,
       videoScript: {
         scenes: form.editedScenes.map((s) => ({
           text: s.text,
@@ -270,57 +262,35 @@ export default function NewPropertyPage() {
     });
   };
 
-  // Upload scene images
-  const handleUploadSceneImages = async (pid: string) => {
-    const files = form.sceneImages.filter((f): f is File => f !== null);
-    if (files.length > 0) {
-      await propertiesApi.uploadImages(pid, files);
-    }
-  };
-
-  // Upload general images
-  const handleUploadGeneralImages = async (pid: string) => {
-    if (form.generalImages.length > 0) {
-      await propertiesApi.uploadImages(pid, form.generalImages);
-    }
-  };
-
-  // Final submit
-  const handleGenerate = async () => {
+  const handleGenerateListings = async () => {
     if (!propertyId) return;
     setLoading(true);
     setError(null);
     try {
-      // Upload all remaining images
-      await handleUploadGeneralImages(propertyId);
-
-      // Save script if edited
       await handleSaveScript();
-
-      // Get all uploaded images to build sceneOrder
-      const images = await propertiesApi.getImages(propertyId);
-      const sceneOrder = form.editedScenes.map((scene, idx) => ({
-        imageId: images[idx]?.id ?? "",
-        sceneText: scene.text,
-        duration: scene.suggestedDuration,
-      }));
-
-      // Kick off listing generation
       await listingsApi.generate({
         propertyId,
-        briefConfig: { templateId: form.selectedPdfTemplateId || undefined },
-        socialConfig: { templateId: form.selectedSocialTemplateId || undefined },
+        briefConfig: { 
+          templateId: form.selectedPdfTemplateId || undefined,
+          colors: { primary: form.primaryColor, secondary: form.secondaryColor }
+        },
+        socialConfig: { 
+          templateId: form.selectedSocialTemplateId || undefined,
+          images: form.uploadedImages.map((img, idx) => ({ imageId: img.id, order: idx })),
+          colors: { primary: form.primaryColor, secondary: form.secondaryColor }
+        },
         videoConfig: {
           templateId: form.selectedVideoTemplateId || undefined,
           format: form.videoFormat,
           voiceoverEnabled: form.voiceoverEnabled,
           voiceGender: form.voiceGender,
-          style: form.videoStyle,
-          sceneOrder,
+          sceneOrder: form.editedScenes.map(s => ({
+            imageId: s.imageId || "",
+            sceneText: s.text,
+            duration: s.suggestedDuration,
+          })),
         },
       });
-
-      // Navigate to results page
       router.push(`/properties/${propertyId}`);
     } catch (e) {
       setError(String(e));
@@ -331,37 +301,35 @@ export default function NewPropertyPage() {
 
   const goNext = async () => {
     try {
-      if (step === 3) {
-        await handleCreateProperty();
+      if (step === 1) await handleCreateProperty();
+      if (step === 2) {
+        if (form.uploadedImages.length === 0) {
+          setError("Por favor subí al menos una imagen antes de continuar.");
+          return;
+        }
       }
-      if (step === 4 && propertyId) {
-        await handleGenerateContent(propertyId);
-      }
-      if (step === 5 && propertyId) {
+      if (step === 3 && propertyId) {
+        if (!content) {
+          setError("Haz clic en 'Generar Contenido IA' para que el asistente redacte el título y descripciones.");
+          return;
+        }
         await handleSaveScript();
-        await handleUploadSceneImages(propertyId);
       }
+      
       setStep((s) => Math.min(s + 1, STEPS.length));
       setError(null);
-    } catch {
-      // error already set
-    }
+    } catch { }
   };
-
-  const goPrev = () => setStep((s) => Math.max(s - 1, 1));
 
   const progressPct = ((step - 1) / (STEPS.length - 1)) * 100;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="border-b bg-card px-4 sm:px-6 py-4 sticky top-0 z-20">
-        <div className="mx-auto max-w-4xl flex items-center justify-between">
+        <div className="mx-auto max-w-5xl flex items-center justify-between">
           <div>
             <h1 className="text-lg sm:text-xl font-bold">Nueva Propiedad</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Paso {step} de {STEPS.length}: {STEPS[step - 1].label}
-            </p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Paso {step} de {STEPS.length}: {STEPS[step - 1].label}</p>
           </div>
           <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
             <X className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Cancelar</span>
@@ -369,769 +337,697 @@ export default function NewPropertyPage() {
         </div>
       </div>
 
-      {/* Progress bar and Steps */}
       <div className="border-b bg-card pb-4 sticky top-[65px] sm:top-[73px] z-10">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 pt-2">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-2">
           <Progress value={progressPct} className="h-1.5 mb-3" />
         </div>
-        <div className="mx-auto max-w-4xl">
-          <div className="flex gap-2 overflow-x-auto px-4 sm:px-6 py-1 no-scrollbar">
+        <div className="mx-auto max-w-5xl px-4">
+          <div className="flex gap-2 overflow-x-auto py-1 no-scrollbar">
             {STEPS.map((s) => {
               const Icon = s.icon;
               return (
-                <button
-                  key={s.id}
-                  disabled
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0",
-                    step === s.id
-                      ? "bg-primary text-primary-foreground"
-                      : step > s.id
-                        ? "bg-primary/20 text-primary"
-                        : "bg-muted text-muted-foreground",
+                <div key={s.id} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0",
+                    step === s.id ? "bg-primary text-primary-foreground" : step > s.id ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                   )}
                 >
-                  <Icon className="h-3 w-3" />
-                  {s.label}
-                </button>
+                  <Icon className="h-3 w-3" /> {s.label}
+                </div>
               );
             })}
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8">
-        {error && (
-          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-            {error}
-          </div>
-        )}
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
+        {error && <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm flex items-start gap-2">
+          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" /> <span>{error}</span>
+        </div>}
 
         {step === 1 && <Step1 form={form} update={update} />}
-        {step === 2 && <Step2 form={form} update={update} />}
+        {step === 2 && <Step2 propertyId={propertyId} form={form} update={update} />}
         {step === 3 && (
-          <Step3 form={form} toggleAmenity={toggleAmenity} update={update} />
-        )}
-        {step === 4 && <Step4 form={form} update={update} templates={templates} isLoading={isLoadingTemplates} />}
-        {step === 5 && (
-          <Step5
-            form={form}
-            content={content}
+          <Step3 
+            form={form} 
+            update={update} 
+            propertyId={propertyId} 
+            content={content} 
+            onGenerate={() => propertyId && handleGenerateContent(propertyId)} 
             loading={loading}
-            onUpdateScene={(idx, text) => {
-              const scenes = [...form.editedScenes];
-              scenes[idx] = { ...scenes[idx], text };
-              update("editedScenes", scenes);
-            }}
-            onSceneImage={(idx, file) => {
-              const imgs = [...form.sceneImages];
-              imgs[idx] = file;
-              update("sceneImages", imgs);
-            }}
           />
         )}
-        {step === 6 && (
-          <Step6
-            files={form.generalImages}
-            onChange={(files) => update("generalImages", files)}
-          />
-        )}
-        {step === 7 && <Step7 form={form} update={update} />}
+        {step === 4 && <Step4 form={form} update={update} templates={templates} content={content} />}
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-8 pb-10">
-          <Button
-            variant="outline"
-            onClick={goPrev}
-            disabled={step === 1 || loading}
-            size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'sm' : 'default'}
-          >
+        <div className="flex justify-between mt-8 pb-10 border-t pt-6">
+          <Button variant="outline" onClick={() => setStep(s => Math.max(s - 1, 1))} disabled={step === 1 || loading}>
             <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
           </Button>
-
           {step < STEPS.length ? (
-            <Button onClick={goNext} disabled={loading} size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'sm' : 'default'}>
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {step === 4 ? "Generando..." : "..."}
-                </>
-              ) : (
-                <>
-                  Siguiente <ChevronRight className="h-4 w-4 ml-1" />
-                </>
-              )}
+            <Button onClick={goNext} disabled={loading || (step === 3 && !content)}>
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</> : <>Siguiente <ChevronRight className="h-4 w-4 ml-1" /></>}
             </Button>
           ) : (
-            <Button
-              onClick={handleGenerate}
-              disabled={loading}
-              size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'sm' : 'default'}
-              className="bg-gradient-to-r from-primary to-primary/80 shadow-lg"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generando...
-                </>
-              ) : (
-                <>
-                  <Zap className="h-4 w-4 mr-2" />
-                  Generar Listado
-                </>
-              )}
+            <Button onClick={handleGenerateListings} disabled={loading} className="bg-gradient-to-r from-primary to-primary/80 shadow-lg px-8">
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generando...</> : <><Sparkles className="h-4 w-4 mr-2" /> Generar Todo</>}
             </Button>
           )}
         </div>
       </div>
     </div>
-
   );
 }
 
-// ---- STEP COMPONENTS ----
+// --- STEP 1: Detalles ---
+function Step1({ form, update }: { form: FormData, update: (k: keyof FormData, v: any) => void }) {
+  const [activeAccordion, setActiveAccordion] = useState<string>("datos");
+  const toggleAmenity = (a: string) => {
+    update("amenities", form.amenities.includes(a) ? form.amenities.filter((x) => x !== a) : [...form.amenities, a]);
+  };
 
-function Step1({
-  form,
-  update,
-}: {
-  form: FormData;
-  update: (k: keyof FormData, v: unknown) => void;
-}) {
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold">Datos Básicos</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Tipo de operación</Label>
-          <Select
-            value={form.operationType}
-            onValueChange={(v) => update("operationType", v)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="venta">Venta</SelectItem>
-              <SelectItem value="alquiler">Alquiler</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Tipo de propiedad</Label>
-          <Select
-            value={form.propertyType}
-            onValueChange={(v) => update("propertyType", v)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="casa">Casa</SelectItem>
-              <SelectItem value="departamento">Departamento</SelectItem>
-              <SelectItem value="oficina">Oficina</SelectItem>
-              <SelectItem value="terreno">Terreno</SelectItem>
-              <SelectItem value="local">Local Comercial</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>País</Label>
-          <Input
-            value={form.country}
-            onChange={(e) => update("country", e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Ciudad</Label>
-          <Input
-            value={form.city}
-            onChange={(e) => update("city", e.target.value)}
-            placeholder="Asuncion"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Barrio / Zona</Label>
-          <Select
-            value={form.neighborhood}
-            onValueChange={(v) => update("neighborhood", v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar barrio" />
-            </SelectTrigger>
-            <SelectContent>
-              {NEIGHBORHOODS_PY.map((n) => (
-                <SelectItem key={n} value={n}>
-                  {n}
-                </SelectItem>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Detalles del Inmueble</h2>
+        <p className="text-sm text-muted-foreground">Ingresa la información básica para generar el contenido.</p>
+      </div>
+      
+      <Accordion type="single" value={activeAccordion} onValueChange={setActiveAccordion} collapsible className="w-full space-y-4 border-none">
+        <AccordionItem value="datos" className="border rounded-xl bg-card px-4 overflow-hidden">
+          <AccordionTrigger className="hover:no-underline py-5">
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <Home className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-semibold text-base">Datos Básicos</span>
+                <span className="text-xs text-muted-foreground font-normal">Tipo, ubicación y operación</span>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-2 pb-6 px-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Operación</Label>
+                <Select value={form.operationType} onValueChange={(v) => update("operationType", v)}>
+                  <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="venta">Venta</SelectItem><SelectItem value="alquiler">Alquiler</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tipo de Inmueble</Label>
+                <Select value={form.propertyType} onValueChange={(v) => update("propertyType", v)}>
+                  <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="casa">Casa</SelectItem><SelectItem value="departamento">Depto</SelectItem>
+                    <SelectItem value="oficina">Oficina</SelectItem><SelectItem value="terreno">Terreno</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Barrio / Zona</Label>
+                <Select value={form.neighborhood} onValueChange={(v) => update("neighborhood", v)}>
+                  <SelectTrigger className="bg-background"><SelectValue placeholder="Seleccionar barrio" /></SelectTrigger>
+                  <SelectContent>{NEIGHBORHOODS_PY.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Ciudad</Label>
+                <Input className="bg-background" value={form.city} onChange={(e) => update("city", e.target.value)} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Dirección (Opcional)</Label>
+                <Input className="bg-background" value={form.address} onChange={(e) => update("address", e.target.value)} placeholder="Calle y número aprox." />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button type="button" onClick={() => setActiveAccordion("caracteristicas")} variant="secondary" className="gap-2">Siguiente Sección <ChevronRight className="h-4 w-4" /></Button>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="caracteristicas" className="border rounded-xl bg-card px-4">
+          <AccordionTrigger className="hover:no-underline py-5">
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <GripVertical className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-semibold text-base">Características</span>
+                <span className="text-xs text-muted-foreground font-normal">Precio, dimensiones y ambientes</span>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-2 pb-6 px-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+              <div className="col-span-2 space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Precio</Label>
+                <div className="flex gap-2">
+                  <Select value={form.currency} onValueChange={(v) => update("currency", v)}>
+                    <SelectTrigger className="w-24 bg-background"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="PYG">PYG</SelectItem></SelectContent>
+                  </Select>
+                  <Input type="number" className="bg-background" value={form.priceAmount} onChange={(e) => update("priceAmount", e.target.value)} placeholder="Ej: 150000" />
+                </div>
+              </div>
+              <div className="space-y-2"><Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Habitaciones</Label><Input type="number" className="bg-background" value={form.bedrooms} onChange={e=>update("bedrooms", e.target.value)} /></div>
+              <div className="space-y-2"><Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Baños</Label><Input type="number" className="bg-background" value={form.bathrooms} onChange={e=>update("bathrooms", e.target.value)} /></div>
+              <div className="space-y-2"><Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Cocheras</Label><Input type="number" className="bg-background" value={form.parkingSpaces} onChange={e=>update("parkingSpaces", e.target.value)} /></div>
+              <div className="space-y-2"><Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">m² Total</Label><Input type="number" className="bg-background" value={form.totalArea} onChange={e=>update("totalArea", e.target.value)} /></div>
+              <div className="col-span-full space-y-2 mt-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Descripción Adicional</Label>
+                <Textarea className="bg-background" value={form.description} onChange={e=>update("description", e.target.value)} rows={3} placeholder="Menciona detalles que lo hagan único..." />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button type="button" onClick={() => setActiveAccordion("amenidades")} variant="secondary" className="gap-2">Siguiente Sección <ChevronRight className="h-4 w-4" /></Button>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="amenidades" className="border rounded-xl bg-card px-4">
+          <AccordionTrigger className="hover:no-underline py-5">
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <Check className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-semibold text-base">Amenidades</span>
+                <span className="text-xs text-muted-foreground font-normal">Piscina, seguridad, extras</span>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-2 pb-6 px-2">
+            <div className="flex flex-wrap gap-2">
+              {AMENITIES.map((a) => (
+                <button key={a} type="button" onClick={() => toggleAmenity(a)}
+                  className={cn("px-4 py-2 rounded-lg text-sm font-medium border transition-all shadow-sm",
+                    form.amenities.includes(a) ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted"
+                  )}
+                >
+                  {a}
+                </button>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Dirección (opcional)</Label>
-          <Input
-            value={form.address}
-            onChange={(e) => update("address", e.target.value)}
-            placeholder="Calle y número"
-          />
-        </div>
-      </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
 
-function Step2({
-  form,
-  update,
-}: {
-  form: FormData;
-  update: (k: keyof FormData, v: unknown) => void;
-}) {
-  return (
-    <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold">Características</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="sm:col-span-2 space-y-2">
-          <Label>Precio</Label>
-          <Input
-            type="number"
-            value={form.priceAmount}
-            onChange={(e) => update("priceAmount", e.target.value)}
-            placeholder="0"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Moneda</Label>
-          <Select
-            value={form.currency}
-            onValueChange={(v) => update("currency", v)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="PYG">PYG (Gs.)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {[
-          { key: "bedrooms", label: "Dormitorios" },
-          { key: "bathrooms", label: "Baños" },
-          { key: "parkingSpaces", label: "Cocheras" },
-          { key: "totalArea", label: "m² Terreno" },
-          { key: "builtArea", label: "m² Construidos" },
-          { key: "unbuiltArea", label: "m² Sin Edificar" },
-          { key: "levels", label: "Niveles / Plantas" },
-        ].map(({ key, label }) => (
-          <div key={key} className="space-y-2">
-            <Label>{label}</Label>
-            <Input
-              type="number"
-              value={(form as unknown as Record<string, string>)[key]}
-              onChange={(e) => update(key as keyof FormData, e.target.value)}
-              placeholder="0"
-            />
-          </div>
-        ))}
-      </div>
-      <div className="space-y-2">
-        <Label>Descripción adicional (opcional)</Label>
-        <Textarea
-          value={form.description}
-          onChange={(e) => update("description", e.target.value)}
-          placeholder="Agrega cualquier detalle especial que quieras incluir..."
-          rows={3}
-        />
-      </div>
-    </div>
-  );
-}
+// --- STEP 2: Galería de Medios ---
+function Step2({ propertyId, form, update }: { propertyId: string | null, form: FormData, update: (k: keyof FormData, v: any) => void }) {
+  const [uploading, setUploading] = useState(false);
 
-function Step3({
-  form,
-  toggleAmenity,
-  update,
-}: {
-  form: FormData;
-  toggleAmenity: (a: string) => void;
-  update: (k: keyof FormData, v: unknown) => void;
-}) {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!propertyId || !e.target.files?.length) return;
+    setUploading(true);
+    try {
+      const files = Array.from(e.target.files);
+      const uploaded = await propertiesApi.uploadImages(propertyId, files);
+      update("uploadedImages", [...form.uploadedImages, ...uploaded]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination || !propertyId) return;
+    const items = Array.from(form.uploadedImages);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    update("uploadedImages", items);
+  };
+
+  const removeImage = async (imageId: string) => {
+    if (!propertyId) return;
+    try {
+      await propertiesApi.deleteImage(propertyId, imageId);
+      update("uploadedImages", form.uploadedImages.filter(img => img.id !== imageId));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold">Amenidades</h2>
-      <p className="text-sm text-muted-foreground">
-        Seleccioná todas las comodidades que tiene la propiedad
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {AMENITIES.map((a) => (
-          <button
-            key={a}
-            type="button"
-            onClick={() => toggleAmenity(a)}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border transition-all",
-              form.amenities.includes(a)
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-foreground border-border hover:border-primary",
-            )}
-          >
-            {form.amenities.includes(a) && (
-              <Check className="inline h-3 w-3 mr-1" />
-            )}
-            {a}
-          </button>
-        ))}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center max-w-2xl mx-auto space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-pretty">Galería de Medios</h2>
+        <p className="text-muted-foreground">Sube tus fotos y ordénalas arrastrando. La primera será la <span className="font-bold text-foreground">portada</span>.</p>
       </div>
-      {form.amenities.length > 0 && (
-        <div className="flex flex-wrap gap-1 p-3 bg-muted rounded-lg">
-          <span className="text-xs sm:text-sm text-muted-foreground mr-2">
-            Seleccionadas:
-          </span>
-          {form.amenities.map((a) => (
-            <Badge key={a} variant="secondary" className="text-[10px] sm:text-xs">
-              {a}
-            </Badge>
-          ))}
+
+      <label className="border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group bg-card shadow-sm">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+          <Upload className="h-8 w-8 text-primary" />
         </div>
+        <span className="font-bold text-lg">Haz clic o arrastra fotos</span>
+        <span className="text-sm text-muted-foreground mt-1">Soporta JPG, PNG y WEBP. Máximo 20 fotos.</span>
+        <input type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+      </label>
+
+      {uploading && <div className="text-center text-sm font-medium animate-pulse text-primary flex items-center justify-center gap-2 py-4">
+        <Loader2 className="h-5 w-5 animate-spin" /> Subiendo y optimizando imágenes...
+      </div>}
+
+      {form.uploadedImages.length > 0 && (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="gallery" direction="horizontal">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-wrap gap-4 mt-8">
+                {form.uploadedImages.map((img, index) => (
+                  <Draggable key={img.id} draggableId={img.id} index={index}>
+                    {(provided, snapshot) => (
+                      <div 
+                        ref={provided.innerRef} 
+                        {...provided.draggableProps} 
+                        {...provided.dragHandleProps}
+                        style={{
+                          ...provided.draggableProps.style,
+                          opacity: snapshot.isDragging ? 0.8 : 1,
+                        }}
+                        className="relative group w-36 h-36 rounded-xl overflow-hidden border-2 bg-card shadow-lg ring-primary/50 transition-all hover:border-primary"
+                      >
+                        <img src={img.url} alt="Property" className="w-full h-full object-cover pointer-events-none" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                          <GripVertical className="h-8 w-8 text-white" />
+                        </div>
+                        {index === 0 && <Badge className="absolute top-2 left-2 text-[10px] bg-primary border-none shadow-md uppercase font-bold px-2 py-0.5">Portada</Badge>}
+                        <button 
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeImage(img.id); }} 
+                          className="absolute top-2 right-2 bg-destructive/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-destructive z-30"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       )}
     </div>
   );
 }
 
-function Step4({
-  form,
-  update,
-  templates,
-  isLoading,
-}: {
-  form: FormData;
-  update: (k: keyof FormData, v: unknown) => void;
-  templates: Template[];
-  isLoading: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-3 text-sm text-muted-foreground">Cargando Estudio Creativo...</span>
-      </div>
-    );
-  }
-
-  const pdfTemplates = templates.filter(t => t.type === "PDF");
-  const socialTemplates = templates.filter(t => t.type.startsWith("SOCIAL"));
-  const videoTemplates = templates.filter(t => t.type === "VIDEO_REEL");
-
-  const TemplateGrid = ({ items, selectedId, onSelect }: { items: Template[], selectedId: string, onSelect: (id: string) => void }) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-      {items.map(t => (
-        <Card
-          key={t.id}
-          onClick={() => onSelect(t.id)}
-          className={cn(
-            "cursor-pointer overflow-hidden transition-all duration-200 group relative",
-            selectedId === t.id ? "ring-2 ring-primary ring-offset-2" : "hover:border-primary/50"
-          )}
-        >
-          <div className="aspect-[4/5] bg-muted relative">
-            {t.previewUrl ? (
-              <img 
-                src={t.previewUrl} 
-                alt={t.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect fill="%23f1f1f1" width="100" height="100"/><text fill="%23999" font-family="sans-serif" font-size="10" x="50" y="50" text-anchor="middle">No Preview</text></svg>';
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                <Image className="h-8 w-8 opacity-20" />
-              </div>
-            )}
-            {selectedId === t.id && (
-              <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-sm">
-                <Check className="h-4 w-4" />
-              </div>
-            )}
-          </div>
-          <div className="p-3 bg-card border-t">
-            <h4 className="text-xs sm:text-sm font-medium leading-none truncate">{t.label || t.name.toUpperCase().replace(/_/g, " ")}</h4>
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">{t.type.replace("SOCIAL_", "").replace("VIDEO_", "")}</p>
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-
-  return (
-    <div className="space-y-6">
-      <div className="mb-2">
-        <h2 className="text-xl sm:text-2xl font-bold">Estudio Creativo</h2>
-        <p className="text-sm text-muted-foreground">Seleccioná los diseños premium para cada formato publicitario.</p>
-      </div>
-
-      <Tabs defaultValue="video" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="video">🎥 Videos</TabsTrigger>
-          <TabsTrigger value="social">📱 Redes</TabsTrigger>
-          <TabsTrigger value="pdf">📄 Brief PDFs</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="video" className="space-y-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
-          <TemplateGrid 
-            items={videoTemplates} 
-            selectedId={form.selectedVideoTemplateId} 
-            onSelect={(id) => update("selectedVideoTemplateId", id)} 
-          />
-          <div className="border-t pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Formato de Video</Label>
-              <Select value={form.videoFormat} onValueChange={(v) => update("videoFormat", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="quick">Rápido (TikTok / Reels cortos)</SelectItem>
-                  <SelectItem value="narrated">Tour Narrado (YouTube / IG TV)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Voz en off con IA</Label>
-              <Select value={form.voiceGender} onValueChange={(v) => update("voiceGender", v)} disabled={!form.voiceoverEnabled}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="female">Femenina (Nova)</SelectItem>
-                  <SelectItem value="male">Masculina (Onyx)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Checkbox id="voiceover" checked={form.voiceoverEnabled} onCheckedChange={(v) => update("voiceoverEnabled", v)} />
-                <span className="text-sm">Activar narración automática</span>
-              </Label>
-              <div className="text-xs text-muted-foreground ml-6">
-                El guion será generado inteligentemente en el próximo paso.
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="social" className="space-y-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
-          <TemplateGrid 
-            items={socialTemplates} 
-            selectedId={form.selectedSocialTemplateId} 
-            onSelect={(id) => update("selectedSocialTemplateId", id)} 
-          />
-        </TabsContent>
-
-        <TabsContent value="pdf" className="space-y-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
-          <TemplateGrid 
-            items={pdfTemplates} 
-            selectedId={form.selectedPdfTemplateId} 
-            onSelect={(id) => update("selectedPdfTemplateId", id)} 
-          />
-        </TabsContent>
-        
-      </Tabs>
-
-      <div className="space-y-2 border-t pt-6">
-        <Label>Contexto adicional para la IA (opcional)</Label>
-        <Textarea
-          value={form.additionalContext}
-          onChange={(e) => update("additionalContext", e.target.value)}
-          placeholder="Ej: Resaltar que es ideal para Airbnb, mencionar que se aceptan mascotas..."
-          rows={2}
-          className="text-sm bg-muted/50 focus:bg-background transition-colors"
-        />
-      </div>
-    </div>
-  );
-}
-
-function Step5({
-  form,
-  content,
-  loading,
-  onUpdateScene,
-  onSceneImage,
-}: {
-  form: FormData;
-  content: PropertyContent | null;
-  loading: boolean;
-  onUpdateScene: (idx: number, text: string) => void;
-  onSceneImage: (idx: number, file: File) => void;
-}) {
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 sm:py-16 gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-base sm:text-lg font-medium text-center px-4">
-          La IA está generando el guion y contenido...
-        </p>
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          Esto puede tomar unos segundos
-        </p>
-      </div>
-    );
-  }
+// --- STEP 3: IA y Guion ---
+function Step3({ form, update, propertyId, content, onGenerate, loading }: any) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeSceneIdx, setActiveSceneIdx] = useState<number | null>(null);
 
   if (!content) {
     return (
-      <div className="text-center py-16 text-muted-foreground">
-        No se pudo generar el contenido. Por favor volvé al paso anterior.
+      <div className="max-w-lg mx-auto space-y-8 py-12 animate-in fade-in duration-500 text-center">
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Cerebro de la Propiedad</h2>
+          <p className="text-muted-foreground text-pretty">La IA analizará tus datos para redactar el título y el guion perfecto.</p>
+        </div>
+        
+        <Card className="shadow-xl border-2">
+          <CardContent className="p-8 space-y-6 text-left">
+            <div className="space-y-3">
+              <Label className="font-bold text-base">Tipo de Video Deseado</Label>
+              <Select value={form.videoFormat} onValueChange={(v) => update("videoFormat", v)}>
+                <SelectTrigger className="h-12 bg-background"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quick">🚀 Reel Rápido (30s) - Para captar atención</SelectItem>
+                  <SelectItem value="narrated">🏡 Recorrido Detallado (60s) - Para YouTube/FB</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center space-x-3 border-2 rounded-xl p-4 bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+                 onClick={() => update("voiceoverEnabled", !form.voiceoverEnabled)}>
+              <Checkbox 
+                id="voiceover" 
+                className="w-5 h-5"
+                checked={form.voiceoverEnabled} 
+                onCheckedChange={(checked) => update("voiceoverEnabled", !!checked)}
+              />
+              <div className="flex flex-col">
+                <label className="text-sm font-bold leading-tight cursor-pointer">Activar narración de voz IA</label>
+                <span className="text-xs text-muted-foreground">Se generará un audio profesional describiendo la casa.</span>
+              </div>
+            </div>
+
+            <Button className="w-full h-14 gap-3 text-lg font-bold shadow-lg bg-primary hover:bg-primary/90" onClick={onGenerate} disabled={loading}>
+              {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Sparkles className="h-6 w-6" />}
+              Generar Contenido IA
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold">Guion Generado por IA</h2>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Podés editar el texto de cada escena y asignar la foto que querés para
-          ese momento del video.
-        </p>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Propuesta de la IA</h2>
+          <p className="text-sm text-muted-foreground">Revisa los textos del video. Para editar todo el contenido, ve al Estudio Creativo.</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        <Card className="bg-primary/5">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Título
-            </div>
-            <div className="font-semibold text-xs sm:text-sm mt-1 truncate">{content.title}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-primary/5">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Hook
-            </div>
-            <div className="font-semibold text-xs sm:text-sm mt-1 truncate">{content.hook}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-primary/5">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Escenas
-            </div>
-            <div className="font-semibold text-xs sm:text-sm mt-1">
-              {content.videoScript.scenes.length} escenas
-            </div>
-          </CardContent>
-        </Card>
+      <div className="bg-primary/10 rounded-2xl p-6 border-2 border-primary/20 shadow-inner">
+        <div className="text-[10px] uppercase tracking-widest text-primary font-black mb-2 flex items-center gap-2">
+          <Sparkles className="h-3 w-3" /> Título Publicitario Generado
+        </div>
+        <div className="text-xl font-bold leading-tight">{content.title}</div>
       </div>
 
-      <div className="space-y-4">
-        {form.editedScenes.map((scene, idx) => (
-          <Card key={idx}>
-            <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row gap-4">
-              <div className="flex items-center gap-3 sm:block">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-bold text-primary">
-                  {idx + 1}
-                </div>
-                <div className="sm:hidden text-xs font-semibold text-muted-foreground">Escena {idx + 1}</div>
-              </div>
-              <div className="flex-1 space-y-2">
-                <Textarea
-                  value={scene.text}
-                  onChange={(e) => onUpdateScene(idx, e.target.value)}
-                  rows={3}
-                  className="text-sm resize-none"
-                  placeholder="Texto narrado para esta escena..."
-                />
-                <div className="text-[10px] sm:text-xs text-muted-foreground">
-                  Duración sugerida: {scene.suggestedDuration}s
-                </div>
-              </div>
-              <div className="flex-shrink-0 flex justify-center">
-                <label
-                  className={cn(
-                    "flex flex-col items-center justify-center w-24 h-24 sm:w-20 sm:h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-                    form.sceneImages[idx]
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary",
-                  )}
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
+      <div className="grid gap-4">
+        {form.editedScenes.map((scene: any, idx: number) => {
+          const selectedImage = form.uploadedImages.find((img: any) => img.id === scene.imageId);
+          return (
+            <Card key={idx} className="border-l-8 border-l-primary/30 hover:border-l-primary transition-all overflow-hidden">
+              <CardContent className="p-5 flex flex-col sm:flex-row gap-6">
+                <div className="flex-1 space-y-3 text-left">
+                  <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Escena {idx + 1} — {scene.suggestedDuration}s</Label>
+                  <Textarea 
+                    value={scene.text} 
                     onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) onSceneImage(idx, f);
+                      const newScenes = [...form.editedScenes];
+                      newScenes[idx].text = e.target.value;
+                      update("editedScenes", newScenes);
                     }}
+                    rows={2} 
+                    className="text-sm resize-none focus-visible:ring-primary border-none bg-muted/30 p-3 rounded-lg" 
                   />
-                  {form.sceneImages[idx] ? (
-                    <img
-                      src={URL.createObjectURL(form.sceneImages[idx]!)}
-                      alt="Scene"
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground mt-1 text-center">
-                        Foto
-                      </span>
-                    </>
-                  )}
-                </label>
-              </div>
+                </div>
+                <div className="flex-shrink-0 flex items-center">
+                  <div 
+                    onClick={() => { setActiveSceneIdx(idx); setModalOpen(true); }}
+                    className={cn("w-28 h-28 rounded-xl border-2 border-dashed cursor-pointer flex flex-col items-center justify-center overflow-hidden transition-all bg-card hover:bg-muted shadow-sm", selectedImage ? "border-primary border-solid" : "hover:border-primary")}
+                  >
+                    {selectedImage ? (
+                      <img src={selectedImage.url} className="w-full h-full object-cover" alt="Scene" />
+                    ) : (
+                      <><ImageIcon className="h-6 w-6 text-muted-foreground mb-2" /><span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Elegir Foto</span></>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <Card className="w-full max-w-3xl bg-background shadow-2xl border-none">
+            <CardHeader className="flex flex-row items-center justify-between py-5 border-b px-8">
+              <CardTitle className="text-xl font-bold">Galería para Escena {activeSceneIdx !== null ? activeSceneIdx + 1 : ''}</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)} className="rounded-full"><X className="h-5 w-5" /></Button>
+            </CardHeader>
+            <CardContent className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              {form.uploadedImages.map((img: any) => (
+                <div key={img.id} className={cn("aspect-square cursor-pointer rounded-xl overflow-hidden border-4 transition-all shadow-md", form.editedScenes[activeSceneIdx!]?.imageId === img.id ? "border-primary scale-95" : "border-transparent hover:border-primary/50")}
+                  onClick={() => {
+                    const newScenes = [...form.editedScenes];
+                    if (activeSceneIdx !== null) newScenes[activeSceneIdx].imageId = img.id;
+                    update("editedScenes", newScenes);
+                    setModalOpen(false);
+                  }}
+                >
+                  <img src={img.url} className="w-full h-full object-cover" />
+                </div>
+              ))}
             </CardContent>
           </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Step6({
-  files,
-  onChange,
-}: {
-  files: File[];
-  onChange: (files: File[]) => void;
-}) {
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      const dropped = Array.from(e.dataTransfer.files).filter((f) =>
-        f.type.startsWith("image/"),
-      );
-      onChange([...files, ...dropped]);
-    },
-    [files, onChange],
-  );
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold">Imágenes Adicionales</h2>
-      <p className="text-xs sm:text-sm text-muted-foreground">
-        Subí fotos adicionales de la propiedad para el brief PDF y las
-        publicaciones en redes.
-      </p>
-
-      <div
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-        className="border-2 border-dashed rounded-xl p-6 sm:p-8 text-center hover:border-primary transition-colors cursor-pointer"
-      >
-        <label className="cursor-pointer block">
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const newFiles = Array.from(e.target.files ?? []);
-              onChange([...files, ...newFiles]);
-            }}
-          />
-          <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="font-medium text-sm sm:text-base">Arrastrá o hacé clic para subir fotos</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            JPG, PNG, WEBP — máx. 20 fotos
-          </p>
-        </label>
-      </div>
-
-      {files.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {files.map((file, idx) => (
-            <div key={idx} className="relative group aspect-square">
-              <img
-                src={URL.createObjectURL(file)}
-                alt={`Photo ${idx + 1}`}
-                className="w-full h-full object-cover rounded-lg"
-              />
-              <button
-                className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => onChange(files.filter((_, i) => i !== idx))}
-              >
-                <X className="h-3 w-3 text-white" />
-              </button>
-            </div>
-          ))}
         </div>
       )}
     </div>
   );
 }
 
-function Step7({
-  form,
-  update,
-}: {
-  form: FormData;
-  update: (k: keyof FormData, v: unknown) => void;
-}) {
+// --- STEP 4: Estudio Creativo ---
+function Step4({ form, update, templates, content }: any) {
+  const [activeTab, setActiveTab] = useState("social");
+  const [previewHtml, setPreviewHtml] = useState<string>("");
+  const [activeSlide, setActiveSlide] = useState("cover");
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  useEffect(() => {
+    if (content && !form.title) {
+      update("title", content.title);
+      update("hook", content.hook);
+      update("body", content.body);
+      update("caption", content.caption);
+    }
+  }, [content]);
+
+  const socialTemplates = templates.filter((t: any) => t.type === "SOCIAL");
+  const pdfTemplates = templates.filter((t: any) => t.type === "PDF");
+  const videoTemplates = templates.filter((t: any) => t.type === "VIDEO_REEL");
+
+  const currentList = activeTab === "social" ? socialTemplates : activeTab === "pdf" ? pdfTemplates : videoTemplates;
+  const currentSelectedIdKey = activeTab === "social" ? "selectedSocialTemplateId" : activeTab === "pdf" ? "selectedPdfTemplateId" : "selectedVideoTemplateId";
+  const activeTemplateId = form[currentSelectedIdKey];
+  const activeTemplate = templates.find((t: any) => t.id === activeTemplateId);
+
+  useEffect(() => {
+    if (!activeTemplate || activeTemplate.livePreviewType !== 'html_iframe' || !content) {
+      setPreviewHtml("");
+      return;
+    }
+
+    let mounted = true;
+    let subPath = 'raw';
+    if (activeTemplate.type === 'SOCIAL') {
+      subPath = `raw?slide=${activeSlide}`;
+    }
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/templates/${activeTemplate.id}/${subPath}`, {
+      headers: { Accept: 'text/plain' }
+    })
+    .then(r => r.text())
+    .then((rawStr) => {
+      if (!mounted) return;
+      try {
+        const compiler = Handlebars.compile(rawStr);
+        const hbData = {
+          title: form.title,
+          hook: form.hook,
+          body: form.body,
+          caption: form.caption,
+          primaryColor: form.primaryColor, 
+          secondaryColor: form.secondaryColor,
+          operation: form.operationType === "venta" ? "VENTA" : "ALQUILER",
+          operationLabel: form.operationType === "venta" ? "EN VENTA" : "EN ALQUILER",
+          price: formatPrice(Number(form.priceAmount) || 0, form.currency),
+          neighborhood: form.neighborhood,
+          city: form.city,
+          address: form.address || form.neighborhood || form.city,
+          location: `${form.neighborhood}, ${form.city}`,
+          bedrooms: form.bedrooms || "0",
+          bathrooms: form.bathrooms || "0",
+          parking: form.parkingSpaces || "0",
+          parkingSpaces: form.parkingSpaces || "0",
+          area: form.totalArea || form.builtArea || "0",
+          builtArea: form.builtArea || "0",
+          totalArea: form.totalArea || "0",
+          amenities: form.amenities,
+          agentName: form.agentName,
+          agentPhone: form.agentPhone,
+          agentEmail: form.agentEmail,
+          agentCompany: form.agentCompany,
+          companyName: form.agentCompany,
+          imageUrl: form.uploadedImages[0]?.url,
+          coverImageUrl: form.uploadedImages[0]?.url,
+          galleryImages: form.uploadedImages.map((img: any) => img.url),
+          isStory: false,
+        };
+        setPreviewHtml(compiler(hbData));
+      } catch (e) {
+        console.error("Handlebars compile error:", e);
+        setPreviewHtml("<div style='padding:20px;color:red;font-family:sans-serif;'>Error al compilar la vista previa</div>");
+      }
+    });
+
+    return () => { mounted = false; };
+  }, [activeTemplate, form, content, activeSlide]);
+
+  const previewSize = useMemo(() => {
+    if (activeTab === "pdf") return { w: 794, h: 1123, scale: 0.45 };
+    return { w: 1080, h: 1080, scale: 0.32 };
+  }, [activeTab]);
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold">Datos del Agente</h2>
-      <p className="text-xs sm:text-sm text-muted-foreground">
-        Estos datos aparecerán en el PDF y las publicaciones. Podés modificarlos
-        para esta propiedad.
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Nombre completo</Label>
-          <Input
-            value={form.agentName}
-            onChange={(e) => update("agentName", e.target.value)}
-            placeholder="Tu nombre"
-          />
+    <div className="flex flex-col md:flex-row gap-8 h-[80vh] animate-in fade-in duration-500 max-w-6xl mx-auto">
+      <div className="w-full md:w-96 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar text-left">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight uppercase">Estudio Creativo</h2>
+          <p className="text-xs text-muted-foreground font-medium">Personaliza el diseño y los textos finales.</p>
         </div>
-        <div className="space-y-2">
-          <Label>Inmobiliaria</Label>
-          <Input
-            value={form.agentCompany}
-            onChange={(e) => update("agentCompany", e.target.value)}
-            placeholder="Nombre de tu inmobiliaria"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Teléfono / WhatsApp</Label>
-          <Input
-            value={form.agentPhone}
-            onChange={(e) => update("agentPhone", e.target.value)}
-            placeholder="+595 9xx xxx xxx"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Email</Label>
-          <Input
-            type="email"
-            value={form.agentEmail}
-            onChange={(e) => update("agentEmail", e.target.value)}
-            placeholder="tu@email.com"
-          />
-        </div>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 h-10 p-1 bg-muted/50 rounded-xl">
+            <TabsTrigger value="social" className="text-xs font-bold rounded-lg uppercase">Redes</TabsTrigger>
+            <TabsTrigger value="pdf" className="text-xs font-bold rounded-lg uppercase">PDF</TabsTrigger>
+            <TabsTrigger value="video" className="text-xs font-bold rounded-lg uppercase">Video</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Accordion type="single" collapsible defaultValue="template" className="w-full space-y-2 border-none">
+          <AccordionItem value="template" className="border rounded-xl bg-card px-4">
+            <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">1. Diseño Visual</AccordionTrigger>
+            <AccordionContent className="pt-2 pb-4 px-1">
+              <div className="grid grid-cols-2 gap-4">
+                {currentList.map((t: any) => (
+                  <Card 
+                    key={t.id} 
+                    className={cn("cursor-pointer overflow-hidden transition-all group border-2 shadow-sm rounded-xl", activeTemplateId === t.id ? "border-primary ring-4 ring-primary/10 scale-95" : "border-transparent hover:border-primary/20")}
+                    onClick={() => update(currentSelectedIdKey, t.id)}
+                  >
+                    <div className="aspect-square bg-muted relative">
+                      {t.thumbnailUrl ? (
+                        <img src={t.thumbnailUrl} className="w-full h-full object-cover" alt={t.label} />
+                      ) : (
+                        <ImageIcon className="h-6 w-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20" />
+                      )}
+                      {activeTemplateId === t.id && <div className="absolute inset-0 bg-primary/10 flex items-center justify-center"><Check className="h-8 w-8 text-primary bg-white rounded-full p-1 shadow-xl" /></div>}
+                    </div>
+                    <div className="p-2 text-[9px] font-black truncate text-center bg-card uppercase tracking-tighter">{t.label}</div>
+                  </Card>
+                ))}
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase ml-1">Color Primario</Label>
+                  <div className="flex gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-lg border-2" value={form.primaryColor} onChange={e=>update("primaryColor", e.target.value)} />
+                    <Input className="h-10 text-[10px] font-mono uppercase bg-background" value={form.primaryColor} onChange={e=>update("primaryColor", e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase ml-1">Color Secundario</Label>
+                  <div className="flex gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-lg border-2" value={form.secondaryColor} onChange={e=>update("secondaryColor", e.target.value)} />
+                    <Input className="h-10 text-[10px] font-mono uppercase bg-background" value={form.secondaryColor} onChange={e=>update("secondaryColor", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="content" className="border rounded-xl bg-card px-4">
+            <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">2. Textos Publicitarios</AccordionTrigger>
+            <AccordionContent className="pt-2 pb-4 space-y-4 px-1">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase ml-1">Título Sugerido</Label>
+                <Input className="h-9 text-xs bg-background" value={form.title} onChange={e=>update("title", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase ml-1">Gancho (Hook)</Label>
+                <Textarea className="text-xs resize-none bg-background" rows={2} value={form.hook} onChange={e=>update("hook", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase ml-1">Cuerpo / Descripción</Label>
+                <Textarea className="text-xs resize-none bg-background" rows={4} value={form.body} onChange={e=>update("body", e.target.value)} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="agent" className="border rounded-xl bg-card px-4">
+            <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">3. Información de Contacto</AccordionTrigger>
+            <AccordionContent className="pt-2 pb-4 space-y-3 px-1">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase ml-1">Nombre</Label>
+                <Input className="h-9 text-xs bg-background" value={form.agentName} onChange={e=>update("agentName", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase ml-1">WhatsApp</Label>
+                <Input className="h-9 text-xs bg-background" value={form.agentPhone} onChange={e=>update("agentPhone", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase ml-1">Email</Label>
+                <Input className="h-9 text-xs bg-background" value={form.agentEmail} onChange={e=>update("agentEmail", e.target.value)} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Zap className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-primary text-sm sm:text-base">
-              Listo para generar
-            </span>
+      <div className="flex-1 bg-[#ebeef2] rounded-3xl border-4 border-white flex flex-col items-center justify-between overflow-hidden relative shadow-inner p-4 pb-0">
+        <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-xl z-10 flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+          Previsualización en Vivo
+        </div>
+
+        <div className="w-full flex-1 flex items-center justify-center relative min-h-[400px]">
+          {activeTemplate?.livePreviewType === 'html_iframe' ? (
+              previewHtml ? (
+                <div 
+                  className="relative shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] bg-white overflow-hidden rounded-sm" 
+                  style={{ 
+                    width: `${previewSize.w * previewSize.scale}px`, 
+                    height: `${previewSize.h * previewSize.scale}px` 
+                  }}
+                >
+                  <iframe 
+                      ref={iframeRef}
+                      sandbox="allow-same-origin allow-scripts"
+                      srcDoc={previewHtml}
+                      className="absolute top-0 left-0 border-none pointer-events-none"
+                      style={{ 
+                        width: `${previewSize.w}px`, 
+                        height: `${previewSize.h}px`,
+                        transform: `scale(${previewSize.scale})`,
+                        transformOrigin: 'top left'
+                      }}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative">
+                      <div className="w-16 h-16 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
+                      <Sparkles className="h-6 w-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] animate-pulse">Generando Vista...</span>
+                </div>
+              )
+          ) : activeTemplate?.livePreviewType === 'static_video' ? (
+              activeTemplate.demoVideoUrl ? (
+                <div className="relative aspect-[9/16] h-full max-h-[520px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden border-[12px] border-black ring-4 ring-white/20 animate-in zoom-in-95 duration-500">
+                  <video src={activeTemplate.demoVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                </div>
+              ) : (
+                <div className="text-muted-foreground text-xs uppercase font-black tracking-widest bg-white/50 px-6 py-3 rounded-full">Video demo no disponible</div>
+              )
+          ) : (
+            <div className="text-muted-foreground text-[10px] uppercase font-black tracking-[0.2em] bg-white/50 px-8 py-4 rounded-full shadow-sm">Selecciona una plantilla</div>
+          )}
+        </div>
+
+        {/* Carousel Strip */}
+        {activeTab === "social" && activeTemplate?.type === "SOCIAL" && (
+          <div className="w-full h-24 bg-white border-t border-x rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] p-4 flex gap-3 overflow-x-auto custom-scrollbar justify-center items-center">
+             {[
+               { id: 'cover', label: 'Portada' },
+               { id: 'features', label: 'Info' },
+               { id: 'amenities', label: 'Extras' },
+               { id: 'photo', label: 'Fotos' },
+               { id: 'contact', label: 'Cierre' }
+             ].map(slide => (
+               <button 
+                key={slide.id}
+                onClick={() => setActiveSlide(slide.id)}
+                className={cn("h-full px-4 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border-2", activeSlide === slide.id ? "bg-primary/5 border-primary shadow-sm scale-105" : "bg-muted/30 border-transparent hover:bg-muted")}
+               >
+                 <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black", activeSlide === slide.id ? "bg-primary text-white" : "bg-background text-muted-foreground")}>{slide.id === 'photo' ? <ImageIcon className="w-3 h-3" /> : slide.label.charAt(0)}</div>
+                 <span className={cn("text-[9px] font-bold uppercase tracking-widest", activeSlide === slide.id ? "text-primary" : "text-muted-foreground")}>{slide.label}</span>
+               </button>
+             ))}
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Al presionar &quot;Generar Listado Profesional&quot;, la IA
-            producirá automáticamente:
-          </p>
-          <ul className="mt-2 text-[10px] sm:text-xs space-y-1">
-            <li>📄 Ficha técnica profesional en PDF</li>
-            <li>📱 Carousel y Story para Instagram</li>
-            <li>🎬 Video reel con voz en off</li>
-            <li>📧 Email de presentación</li>
-          </ul>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 }

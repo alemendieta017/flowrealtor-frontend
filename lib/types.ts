@@ -62,7 +62,9 @@ export interface Template {
   name: string;
   label: string;
   type: "PDF" | "SOCIAL" | "VIDEO_REEL";
-  previewUrl: string;
+  thumbnailUrl: string;
+  livePreviewType: "html_iframe" | "static_video";
+  demoVideoUrl?: string;
 }
 
 export interface PropertyContent {

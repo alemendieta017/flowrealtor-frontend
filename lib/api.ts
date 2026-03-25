@@ -131,6 +131,14 @@ export const propertiesApi = {
 // ---- TEMPLATES ----
 export const templatesApi = {
   getAll: () => request<Template[]>("/templates"),
+  getRaw: (id: string) => request<string>(`/templates/${id}/raw`, {
+    headers: {
+      Accept: 'text/plain'
+    }
+  }).catch(e => {
+    // If request tries to parse JSON and fails, we might need a custom fetch for raw text
+    return fetch(`${BASE_URL}/api/templates/${id}/raw`).then(r => r.text());
+  }),
 };
 
 // ---- CONTENT ----
