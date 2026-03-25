@@ -123,12 +123,16 @@ export function SocialMediaPreview({
                 </h4>
                 <div className="grid grid-cols-3 lg:grid-cols-2 gap-2">
                   {images.slice(0, 6).map((img, index) => (
-                    <img
+                    <div
                       key={index}
-                      src={img}
-                      alt={`Imagen ${index + 1}`}
-                      className="aspect-square rounded-lg object-cover border-2 border-transparent hover:border-primary cursor-pointer transition-colors"
-                    />
+                      className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-primary cursor-pointer transition-colors"
+                    >
+                      <img
+                        src={img}
+                        alt={`Imagen ${index + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover scale-101"
+                      />
+                    </div>
                   ))}
                 </div>
                 <div className="pt-4 space-y-2">
@@ -164,12 +168,16 @@ export function SocialMediaPreview({
                 </h4>
                 <div className="grid grid-cols-3 lg:grid-cols-2 gap-2">
                   {images.slice(0, 6).map((img, index) => (
-                    <img
+                    <div
                       key={index}
-                      src={img}
-                      alt={`Imagen ${index + 1}`}
-                      className="aspect-square rounded-lg object-cover border-2 border-transparent hover:border-primary cursor-pointer transition-colors"
-                    />
+                      className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-primary cursor-pointer transition-colors"
+                    >
+                      <img
+                        src={img}
+                        alt={`Imagen ${index + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover scale-101"
+                      />
+                    </div>
                   ))}
                 </div>
                 <div className="pt-4 space-y-2">
@@ -218,7 +226,11 @@ function PostPreview({
 
   return (
     <div className="relative aspect-square max-w-md mx-auto rounded-lg overflow-hidden shadow-2xl">
-      <img src={image} alt={title} className="w-full h-full object-cover" />
+      <img
+        src={image}
+        alt={title}
+        className="absolute inset-0 w-full h-full object-cover scale-101"
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
       <div
@@ -268,7 +280,11 @@ function StoryPreview({
 
   return (
     <div className="relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl">
-      <img src={image} alt={title} className="w-full h-full object-cover" />
+      <img
+        src={image}
+        alt={title}
+        className="absolute inset-0 w-full h-full object-cover scale-101"
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/20" />
 
       <div

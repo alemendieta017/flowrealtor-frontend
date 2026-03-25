@@ -123,11 +123,11 @@ export function BriefPreview({
                 </div>
               </div>
 
-              <div className="relative">
+              <div className="relative h-40 overflow-hidden">
                 <img
                   src={mainImage}
                   alt={property.title}
-                  className="w-full h-40 object-cover"
+                  className="absolute inset-0 w-full h-full object-cover scale-101"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                   <h2 className="text-white font-bold text-lg">
@@ -189,12 +189,13 @@ export function BriefPreview({
                 {gridImages.length > 0 && (
                   <div className="grid grid-cols-4 gap-1">
                     {gridImages.map((img, i) => (
-                      <img
-                        key={i}
-                        src={img}
-                        alt={`Foto ${i + 2}`}
-                        className="aspect-square object-cover rounded"
-                      />
+                      <div key={i} className="relative aspect-square overflow-hidden rounded">
+                        <img
+                          src={img}
+                          alt={`Foto ${i + 2}`}
+                          className="absolute inset-0 w-full h-full object-cover scale-101"
+                        />
+                      </div>
                     ))}
                   </div>
                 )}

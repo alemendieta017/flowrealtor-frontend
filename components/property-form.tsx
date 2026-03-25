@@ -467,7 +467,7 @@ export function PropertyForm({
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-cover scale-101"
                     />
                     <button
                       type="button"

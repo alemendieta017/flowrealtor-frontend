@@ -395,12 +395,12 @@ export default function PropertyResultsPage() {
                               .map((img, idx) => (
                                 <div
                                   key={idx}
-                                  className="aspect-square rounded-lg overflow-hidden border"
+                                  className="relative aspect-square rounded-lg overflow-hidden border"
                                 >
                                   <img
                                     src={img.url}
                                     alt={`Slide ${idx + 1}`}
-                                    className="w-full h-full object-cover"
+                                    className="absolute inset-0 w-full h-full object-cover scale-101"
                                   />
                                 </div>
                               ))}
@@ -430,11 +430,11 @@ export default function PropertyResultsPage() {
                       if (single?.generatedImages?.length) {
                         return (
                           <div className="flex justify-center">
-                            <div className="w-full max-w-sm aspect-square rounded-xl overflow-hidden border shadow-sm">
+                            <div className="relative w-full max-w-sm aspect-square rounded-xl overflow-hidden border shadow-sm">
                               <img
                                 src={single.generatedImages[0].url}
                                 alt="Single Post"
-                                className="w-full h-full object-cover"
+                                className="absolute inset-0 w-full h-full object-cover scale-101"
                               />
                             </div>
                           </div>
@@ -463,11 +463,11 @@ export default function PropertyResultsPage() {
                       if (story?.generatedImages?.length) {
                         return (
                           <div className="flex justify-center">
-                            <div className="w-48 sm:w-56 aspect-[9/16] rounded-xl overflow-hidden border shadow-sm">
+                            <div className="relative w-48 sm:w-56 aspect-[9/16] rounded-xl overflow-hidden border shadow-sm">
                               <img
                                 src={story.generatedImages[0].url}
                                 alt="Story"
-                                className="w-full h-full object-cover"
+                                className="absolute inset-0 w-full h-full object-cover scale-101"
                               />
                             </div>
                           </div>
