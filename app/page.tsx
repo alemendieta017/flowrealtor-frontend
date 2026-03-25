@@ -147,10 +147,10 @@ export default function DashboardPage() {
   ];
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh overflow-hidden">
       <AppSidebar />
-      <SidebarInset>
-        <div className="flex-1 overflow-auto">
+      <SidebarInset className="h-full">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {/* Top bar */}
           <div className="border-b bg-card px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-10">
             <div className="flex items-center gap-3">

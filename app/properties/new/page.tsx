@@ -431,13 +431,24 @@ export default function NewPropertyPage() {
           </Button>
           {step < STEPS.length ? (
             <Button
-              onClick={goNext}
-              disabled={loading || (step === 3 && !content)}
+              onClick={() => {
+                if (step === 3 && !content && propertyId) {
+                  handleGenerateContent(propertyId)
+                } else {
+                  goNext()
+                }
+              }}
+              disabled={loading}
+              className={step === 3 && !content ? "bg-primary hover:bg-primary/90" : ""}
             >
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />{' '}
                   Procesando...
+                </>
+              ) : step === 3 && !content ? (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" /> Generar Contenido IA
                 </>
               ) : (
                 <>
@@ -876,7 +887,7 @@ function Step2({
                           ...provided.draggableProps.style,
                           opacity: snapshot.isDragging ? 0.8 : 1,
                         }}
-                        className="relative group w-36 h-36 rounded-xl overflow-hidden border-2 bg-card shadow-lg ring-primary/50 transition-all hover:border-primary"
+                        className="relative group w-36 h-36 rounded-xl overflow-hidden border-2 bg-card shadow-lg ring-primary/50 transition-colors hover:border-primary"
                       >
                         <img
                           src={img.url}
@@ -985,19 +996,6 @@ function Step3({
                 </span>
               </div>
             </div>
-
-            <Button
-              className="w-full h-14 gap-3 text-lg font-bold shadow-lg bg-primary hover:bg-primary/90"
-              onClick={onGenerate}
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <Sparkles className="h-6 w-6" />
-              )}
-              Generar Contenido IA
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -1250,8 +1248,8 @@ function Step4({ form, update, templates, content }: any) {
   }, [activeTab])
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 h-[80vh] animate-in fade-in duration-500 max-w-6xl mx-auto">
-      <div className="w-full md:w-96 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar text-left">
+    <div className="flex flex-col lg:flex-row gap-8 lg:h-[calc(100vh-250px)] lg:min-h-[600px] animate-in fade-in duration-500 max-w-6xl mx-auto w-full">
+      <div className="w-full lg:w-[400px] flex flex-col gap-6 lg:overflow-y-auto pr-2 custom-scrollbar text-left shrink-0">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold tracking-tight uppercase">
             Estudio Creativo
@@ -1479,7 +1477,8 @@ function Step4({ form, update, templates, content }: any) {
                   ref={iframeRef}
                   sandbox="allow-same-origin allow-scripts"
                   srcDoc={previewHtml}
-                  className="absolute top-0 left-0 border-none pointer-events-none"
+                  scrolling="no"
+                  className="absolute top-0 left-0 border-none pointer-events-none overflow-hidden"
                   style={{
                     width: `${previewSize.w}px`,
                     height: `${previewSize.h}px`,

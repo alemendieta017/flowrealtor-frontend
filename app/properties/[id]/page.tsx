@@ -270,7 +270,8 @@ export default function PropertyResultsPage() {
                   <div className="border rounded-xl overflow-hidden bg-muted/30 aspect-[0.7] w-full">
                     <iframe
                       src={brief.pdfUrl}
-                      className="w-full h-full"
+                      className="w-full h-full overflow-hidden border-none"
+                      scrolling="no"
                       title="PDF Preview"
                     />
                   </div>
