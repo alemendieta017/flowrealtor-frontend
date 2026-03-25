@@ -439,7 +439,9 @@ export default function NewPropertyPage() {
                 }
               }}
               disabled={loading}
-              className={step === 3 && !content ? "bg-primary hover:bg-primary/90" : ""}
+              className={
+                step === 3 && !content ? 'bg-primary hover:bg-primary/90' : ''
+              }
             >
               {loading ? (
                 <>
@@ -1467,7 +1469,7 @@ function Step4({ form, update, templates, content }: any) {
           {activeTemplate?.livePreviewType === 'html_iframe' ? (
             previewHtml ? (
               <div
-                className="relative shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] bg-white overflow-hidden rounded-sm"
+                className="relative shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] bg-white overflow-hidden rounded-sm shrink-0 aspect-square max-w-full"
                 style={{
                   width: `${previewSize.w * previewSize.scale}px`,
                   height: `${previewSize.h * previewSize.scale}px`,
@@ -1500,7 +1502,7 @@ function Step4({ form, update, templates, content }: any) {
             )
           ) : activeTemplate?.livePreviewType === 'static_video' ? (
             activeTemplate.demoVideoUrl ? (
-              <div className="relative aspect-[9/16] h-full max-h-[520px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden border-[12px] border-black ring-4 ring-white/20 animate-in zoom-in-95 duration-500">
+              <div className="relative aspect-[9/16] h-full max-h-[520px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden border-[12px] border-black ring-4 ring-white/20 animate-in zoom-in-95 duration-500 shrink-0">
                 <video
                   src={activeTemplate.demoVideoUrl}
                   autoPlay
@@ -1525,7 +1527,7 @@ function Step4({ form, update, templates, content }: any) {
 
         {/* Carousel Strip */}
         {activeTab === 'social' && activeTemplate?.type === 'SOCIAL' && (
-          <div className="w-full h-24 bg-white border-t border-x rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] p-4 flex gap-3 overflow-x-auto custom-scrollbar justify-center items-center">
+          <div className="w-full h-24 bg-white border-t border-x rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] p-4 flex gap-2 sm:gap-3 overflow-x-auto custom-scrollbar md:justify-center items-center">
             {[
               { id: 'cover', label: 'Portada' },
               { id: 'features', label: 'Info' },
@@ -1537,7 +1539,7 @@ function Step4({ form, update, templates, content }: any) {
                 key={slide.id}
                 onClick={() => setActiveSlide(slide.id)}
                 className={cn(
-                  'h-full px-4 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border-2',
+                  'h-full px-3 sm:px-4 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border-2 shrink-0',
                   activeSlide === slide.id
                     ? 'bg-primary/5 border-primary shadow-sm scale-105'
                     : 'bg-muted/30 border-transparent hover:bg-muted',
