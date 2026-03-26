@@ -340,7 +340,7 @@ export default function NewPropertyPage() {
 
       setStep((s) => Math.min(s + 1, STEPS.length))
       setError(null)
-    } catch {}
+    } catch { }
   }
 
   const progressPct = ((step - 1) / (STEPS.length - 1)) * 100
@@ -932,10 +932,10 @@ function Step3({
       <div className="max-w-lg mx-auto space-y-8 py-12 animate-in fade-in duration-500 text-center">
         <div className="space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">
-            Cerebro de la Propiedad
+            Creación de Contenido
           </h2>
           <p className="text-muted-foreground text-pretty">
-            La IA analizará tus datos para redactar el título y el guion
+            Analizaremos los datos cargados para redactar el título y el guion
             perfecto.
           </p>
         </div>
@@ -978,7 +978,7 @@ function Step3({
               />
               <div className="flex flex-col">
                 <label className="text-sm font-bold leading-tight cursor-pointer">
-                  Activar narración de voz IA
+                  Activar narración de voz
                 </label>
                 <span className="text-xs text-muted-foreground">
                   Se generará un audio profesional describiendo la casa.
@@ -996,7 +996,7 @@ function Step3({
               ) : (
                 <Sparkles className="h-6 w-6" />
               )}
-              Generar Contenido IA
+              Generar Contenido
             </Button>
           </CardContent>
         </Card>
