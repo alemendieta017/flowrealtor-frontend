@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CreativeStudio } from "@/components/creative-studio";
 import {
   Accordion,
   AccordionContent,
@@ -99,6 +100,10 @@ export default function PropertyDetailsPage() {
     hook: "",
     body: "",
     caption: "",
+    agentName: "Juan Pérez",
+    agentPhone: "+595 999 123456",
+    agentEmail: "juan@flowrealtor.com",
+    agentCompany: "FlowRealtor",
     primaryColor: "#2563eb",
     secondaryColor: "#1e40af",
     selectedPdfTemplateId: "",
@@ -282,51 +287,61 @@ export default function PropertyDetailsPage() {
     }
   };
 
-  const handleRegenerateAll = async () => {
+  const [studioActiveTab, setStudioActiveTab] = useState<'brief' | 'social' | 'video'>('social');
+
+  const handleSaveProduct = async (studioData: any, productType?: string) => {
     if (!id) return;
     setRegeneratingAll(true);
     try {
-      // 1. Update Content
+      // 1. Update Content (Granular)
       await contentApi.update(id, {
-        title: studioForm.title,
-        hook: studioForm.hook,
-        body: studioForm.body,
-        caption: studioForm.caption,
+        briefTitle: studioData.briefTitle,
+        briefHook: studioData.briefHook,
+        briefDescripcion: studioData.briefDescripcion,
+        socialPostTitle: studioData.socialPostTitle,
+        socialPostCaption: studioData.socialPostCaption,
+        hashtags: studioData.hashtags,
+        videoTitle: studioData.videoTitle,
+        videoScript: studioData.videoScript,
       });
-      // 2. Request listings generation
-      await listingsApi.generate({
-        propertyId: id,
-        briefConfig: {
-          templateId: studioForm.selectedPdfTemplateId || undefined,
-          colors: {
-            primary: studioForm.primaryColor,
-            secondary: studioForm.secondaryColor,
-          },
-        },
-        socialConfig: {
-          templateId: studioForm.selectedSocialTemplateId || undefined,
-          images: uploadedImages.map((img, idx) => ({
-            imageId: img.id,
-            order: idx,
-          })),
-          colors: {
-            primary: studioForm.primaryColor,
-            secondary: studioForm.secondaryColor,
-          },
-        },
-        videoConfig: {
-          templateId: studioForm.selectedVideoTemplateId || undefined,
-          format: studioForm.videoFormat as "quick" | "narrated",
-          voiceoverEnabled: studioForm.voiceoverEnabled,
-          voiceGender: studioForm.voiceGender as "male" | "female",
-          sceneOrder: studioForm.editedScenes.map((s, idx) => ({
-            imageId: uploadedImages[idx % uploadedImages.length]?.id || "",
-            sceneText: s.text,
-            duration: s.suggestedDuration,
-          })),
-        },
-      });
-      // Switch back to results and reload
+
+      // 2. Request generation for specific product or all
+      const briefConfig = {
+        templateId: studioData.selectedPdfTemplateId || undefined,
+        colors: { primary: studioData.primaryColor, secondary: studioData.secondaryColor },
+      };
+      
+      const socialConfig = {
+        templateId: studioData.selectedSocialTemplateId || undefined,
+        images: studioData.uploadedImages.map((img: any, idx: number) => ({
+          imageId: img.id,
+          order: idx,
+        })),
+        colors: { primary: studioData.primaryColor, secondary: studioData.secondaryColor },
+      };
+
+      const videoConfig = {
+        templateId: studioData.selectedVideoTemplateId || undefined,
+        format: studioForm.videoFormat as "quick" | "narrated",
+        voiceoverEnabled: studioForm.voiceoverEnabled,
+        voiceGender: studioForm.voiceGender as "male" | "female",
+        sceneOrder: studioData.videoScript.scenes.map((s: any, idx: number) => ({
+          imageId: studioData.uploadedImages[idx % studioData.uploadedImages.length]?.id || "",
+          sceneText: s.text,
+          duration: s.suggestedDuration,
+        })),
+      };
+
+      if (!productType || productType === 'brief') {
+        await listingsApi.generate({ propertyId: id, briefConfig });
+      }
+      if (!productType || productType === 'social') {
+        await listingsApi.generate({ propertyId: id, socialConfig });
+      }
+      if (!productType || productType === 'video') {
+        await listingsApi.generate({ propertyId: id, videoConfig });
+      }
+
       setMainTab("resultados");
       await loadAll();
     } catch (err) {
@@ -334,6 +349,11 @@ export default function PropertyDetailsPage() {
     } finally {
       setRegeneratingAll(false);
     }
+  };
+
+  const openStudio = (tab: 'brief' | 'social' | 'video') => {
+    setStudioActiveTab(tab);
+    setMainTab("estudio");
   };
 
   const allProcessing =
@@ -457,7 +477,7 @@ export default function PropertyDetailsPage() {
                             </a>
                           </Button>
                         )}
-                        <Button variant="outline" className="w-full gap-2" onClick={() => setMainTab("estudio")}>
+                        <Button variant="outline" className="w-full gap-2" onClick={() => openStudio("brief")}>
                           <Sparkles className="h-4 w-4" /> Editar y Regenerar
                         </Button>
                       </CardContent>
@@ -554,7 +574,7 @@ export default function PropertyDetailsPage() {
                       <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-6">{content?.caption}</p>
                       
                       <div className="pt-2">
-                        <Button variant="link" className="w-full text-xs text-primary" onClick={() => setMainTab("estudio")}>
+                        <Button variant="link" className="w-full text-xs text-primary" onClick={() => openStudio("social")}>
                            <Sparkles className="h-3 w-3 mr-1" /> Modificar en el Estudio
                         </Button>
                       </div>
@@ -592,7 +612,7 @@ export default function PropertyDetailsPage() {
                             </a>
                           </Button>
                         )}
-                        <Button variant="outline" className="w-full gap-2" onClick={() => setMainTab("estudio")}>
+                        <Button variant="outline" className="w-full gap-2" onClick={() => openStudio("video")}>
                           <Sparkles className="h-4 w-4" /> Editar y Regenerar
                         </Button>
                       </CardContent>
@@ -611,237 +631,28 @@ export default function PropertyDetailsPage() {
 
           {/* ===================== ESTUDIO CREATIVO ===================== */}
           <TabsContent value="estudio" className="mt-0 space-y-6">
-            <div className="flex flex-col lg:flex-row gap-8 lg:h-[calc(100vh-250px)] lg:min-h-[600px] animate-in fade-in duration-500 w-full">
-              <div className="w-full lg:w-[450px] flex flex-col gap-6 lg:overflow-y-auto pr-2 custom-scrollbar shrink-0 text-left">
-                <div className="space-y-1">
-                  <h2 className="text-xl font-bold tracking-tight uppercase">
-                    Estudio Creativo
-                  </h2>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Personaliza el diseño y los textos finales.
-                  </p>
-                </div>
-
-                <Accordion type="single" collapsible defaultValue="gallery" className="w-full space-y-3">
-                  
-                  {/* GALLERY SECTION */}
-                  <AccordionItem value="gallery" className="border rounded-xl bg-card px-4">
-                    <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      1. Galería de Medios
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-4">
-                      <div className="space-y-4">
-                        <label className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
-                           <Upload className="h-6 w-6 text-primary mb-2" />
-                           <span className="text-sm font-medium">Subir nuevas fotos</span>
-                           <input type="file" multiple accept="image/*" className="hidden" onChange={handleUploadImage} disabled={uploading} />
-                        </label>
-                        {uploading && <div className="text-xs text-center text-primary animate-pulse">Subiendo...</div>}
-                        
-                        <DragDropContext onDragEnd={handleDragEnd}>
-                          <Droppable droppableId="gallery" direction="vertical">
-                            {(provided) => (
-                              <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-3 gap-2">
-                                {uploadedImages.map((img, index) => (
-                                  <Draggable key={img.id} draggableId={img.id} index={index}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        className={cn("relative group aspect-square rounded-lg overflow-hidden border-2 bg-muted", snapshot.isDragging ? "border-primary scale-105 z-10" : "border-transparent")}
-                                      >
-                                        <img src={img.url} className="absolute inset-0 w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                          <GripVertical className="text-white h-6 w-6" />
-                                        </div>
-                                        {index === 0 && <Badge className="absolute bottom-1 left-1 text-[8px] px-1 py-0 bg-primary">Portada</Badge>}
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); removeImage(img.id); }}
-                                          className="absolute top-1 right-1 bg-destructive/90 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        </DragDropContext>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  {/* DESIGN SECTION */}
-                  <AccordionItem value="design" className="border rounded-xl bg-card px-4">
-                     <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      2. Diseño Visual
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-[10px] font-bold uppercase">Color Primario</Label>
-                          <div className="flex gap-2">
-                            <Input type="color" className="w-10 h-10 p-1 rounded-lg cursor-pointer" value={studioForm.primaryColor} onChange={(e) => setStudioForm(f => ({...f, primaryColor: e.target.value}))} />
-                            <Input className="h-10 text-xs font-mono uppercase bg-background" value={studioForm.primaryColor} onChange={(e) => setStudioForm(f => ({...f, primaryColor: e.target.value}))} />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[10px] font-bold uppercase">Color Secundario</Label>
-                          <div className="flex gap-2">
-                            <Input type="color" className="w-10 h-10 p-1 rounded-lg cursor-pointer" value={studioForm.secondaryColor} onChange={(e) => setStudioForm(f => ({...f, secondaryColor: e.target.value}))} />
-                            <Input className="h-10 text-xs font-mono uppercase bg-background" value={studioForm.secondaryColor} onChange={(e) => setStudioForm(f => ({...f, secondaryColor: e.target.value}))} />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 pt-2">
-                        <Label className="text-xs font-bold">Plantilla PDF</Label>
-                        <Select value={studioForm.selectedPdfTemplateId} onValueChange={(v) => setStudioForm(f => ({...f, selectedPdfTemplateId: v}))}>
-                          <SelectTrigger className="text-xs bg-background"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {templates.filter(t => t.type === "PDF").map(t => (
-                              <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-3">
-                        <Label className="text-xs font-bold">Plantilla Redes Sociales</Label>
-                        <Select value={studioForm.selectedSocialTemplateId} onValueChange={(v) => setStudioForm(f => ({...f, selectedSocialTemplateId: v}))}>
-                          <SelectTrigger className="text-xs bg-background"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {templates.filter(t => t.type === "SOCIAL").map(t => (
-                              <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-3">
-                        <Label className="text-xs font-bold">Plantilla Video</Label>
-                        <Select value={studioForm.selectedVideoTemplateId} onValueChange={(v) => setStudioForm(f => ({...f, selectedVideoTemplateId: v}))}>
-                          <SelectTrigger className="text-xs bg-background"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {templates.filter(t => t.type === "VIDEO_REEL").map(t => (
-                              <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  {/* CONTENT SECTION */}
-                  <AccordionItem value="content" className="border rounded-xl bg-card px-4">
-                     <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      3. Textos Publicitarios
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-4 space-y-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase">Título</Label>
-                        <Input className="text-xs bg-background" value={studioForm.title} onChange={(e) => setStudioForm(f => ({...f, title: e.target.value}))} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase">Hook (Gancho)</Label>
-                        <Textarea className="text-xs resize-none bg-background" rows={2} value={studioForm.hook} onChange={(e) => setStudioForm(f => ({...f, hook: e.target.value}))} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase">Cuerpo de la Publicación</Label>
-                        <Textarea className="text-xs resize-none bg-background" rows={4} value={studioForm.body} onChange={(e) => setStudioForm(f => ({...f, body: e.target.value}))} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase">Caption (Redes)</Label>
-                        <Textarea className="text-xs resize-none bg-background" rows={4} value={studioForm.caption} onChange={(e) => setStudioForm(f => ({...f, caption: e.target.value}))} />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                </Accordion>
-
-                <div className="mt-4 pb-12 lg:pb-0">
-                  <Button 
-                    size="lg" 
-                    className="w-full bg-gradient-to-r from-primary to-primary/80 shadow-lg text-sm gap-2"
-                    onClick={handleRegenerateAll}
-                    disabled={regeneratingAll}
-                  >
-                    {regeneratingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    Guardar y Regenerar Todo
-                  </Button>
-                </div>
-              </div>
-
-              {/* LIVE PREVIEW PANE */}
-              <div className="flex-1 bg-[#ebeef2] rounded-3xl border-4 border-white flex flex-col items-center justify-between overflow-hidden relative shadow-inner p-4 pb-0 min-h-[500px]">
-                <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-xl z-20 flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-                  Vista Previa
-                </div>
-
-                <div className="w-full flex justify-center mb-4 z-10 relative mt-2">
-                  <Tabs value={previewTab} onValueChange={setPreviewTab} className="bg-white/80 backdrop-blur-md p-1 rounded-lg shadow-sm border inline-flex">
-                    <TabsList className="h-8">
-                      <TabsTrigger value="social" className="text-[10px] px-3 font-bold uppercase">Redes</TabsTrigger>
-                      <TabsTrigger value="pdf" className="text-[10px] px-3 font-bold uppercase">PDF</TabsTrigger>
-                      <TabsTrigger value="video" className="text-[10px] px-3 font-bold uppercase">Video</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-
-                <div className="w-full flex-1 flex items-center justify-center relative pb-6 z-10">
-                  {previewTab === "video" ? (
-                     <div className="text-xs text-muted-foreground bg-white/50 px-6 py-2 rounded-full font-bold tracking-wider">
-                       El video requiere ser regenerado para previsualizar
-                     </div>
-                  ) : previewHtml ? (
-                    <div
-                      className="relative shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] bg-white overflow-hidden rounded-sm"
-                      style={{
-                        width: `${previewSize.w * previewSize.scale}px`,
-                        height: `${previewSize.h * previewSize.scale}px`,
-                      }}
-                    >
-                      <iframe
-                        sandbox="allow-same-origin allow-scripts"
-                        srcDoc={previewHtml}
-                        scrolling="no"
-                        className="absolute top-0 left-0 border-none pointer-events-none overflow-hidden"
-                        style={{
-                          width: `${previewSize.w}px`,
-                          height: `${previewSize.h}px`,
-                          transform: `scale(${previewSize.scale})`,
-                          transformOrigin: "top left",
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-xs text-muted-foreground bg-white/50 px-6 py-2 rounded-full font-bold tracking-wider">
-                      Cargando vista previa...
-                    </div>
-                  )}
-                </div>
-
-                {previewTab === "social" && (
-                  <div className="w-full h-20 bg-white border-t rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] p-3 flex gap-2 overflow-x-auto custom-scrollbar justify-center relative z-20">
-                    {["cover", "features", "amenities", "photo", "contact"].map((slide) => (
-                      <button
-                        key={slide}
-                        onClick={() => setActiveSlide(slide)}
-                        className={cn("px-4 rounded-lg text-[10px] font-bold uppercase transition-all", activeSlide === slide ? "bg-primary/10 text-primary border-primary border" : "bg-muted/30 text-muted-foreground border-transparent hover:bg-muted")}
-                      >
-                        {slide}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <CreativeStudio 
+              propertyId={id as string}
+              initialData={{
+                ...studioForm,
+                uploadedImages,
+                operationType: property?.operationType,
+                priceFormatted: formatPrice(Number(property?.priceAmount) || 0, property?.currency || 'USD'),
+                neighborhood: property?.neighborhood,
+                city: property?.city,
+                bedrooms: property?.bedrooms,
+                bathrooms: property?.bathrooms,
+                parkingSpaces: property?.parkingSpaces,
+                totalArea: property?.totalArea,
+                amenities: property?.amenities,
+              }}
+              content={content}
+              templates={templates}
+              onSave={handleSaveProduct}
+              isGenerating={regeneratingAll}
+              mode="edit"
+              initialTab={studioActiveTab}
+            />
           </TabsContent>
         </Tabs>
       </div>

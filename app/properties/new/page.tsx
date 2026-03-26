@@ -57,6 +57,7 @@ import {
 } from '@hello-pangea/dnd'
 import Handlebars from 'handlebars'
 import { Checkbox } from '@/components/ui/checkbox'
+import { CreativeStudio } from '@/components/creative-studio'
 
 const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b' // TODO: replace with auth context
 
@@ -188,8 +189,11 @@ export default function NewPropertyPage() {
     }
   }, [])
 
-  const update = (key: keyof FormData, value: unknown) =>
-    setForm((f) => ({ ...f, [key]: value }))
+  const update = useCallback((key: keyof FormData, value: unknown) =>
+    setForm((f) => ({ ...f, [key]: value })), [])
+
+  const updateMultiple = useCallback((updates: Partial<FormData>) =>
+    setForm((f) => ({ ...f, ...updates })), [])
 
   const handleCreateProperty = async () => {
     if (propertyId) return // already created
@@ -415,7 +419,7 @@ export default function NewPropertyPage() {
         {step === 4 && (
           <Step4
             form={form}
-            update={update}
+            updateMultiple={updateMultiple}
             templates={templates}
             content={content}
           />
@@ -1136,444 +1140,51 @@ function Step3({
 }
 
 // --- STEP 4: Estudio Creativo ---
-function Step4({ form, update, templates, content }: any) {
-  const [activeTab, setActiveTab] = useState('social')
-  const [previewHtml, setPreviewHtml] = useState<string>('')
-  const [activeSlide, setActiveSlide] = useState('cover')
-  const iframeRef = useRef<HTMLIFrameElement>(null)
+function Step4({ form, updateMultiple, templates, content, isGenerating }: any) {
+  const handleSave = useCallback(async (studioData: any) => {
+    // Perform a single update with all fields to avoid multiple re-renders
+    // This is safer and prevents "Cannot update a component while rendering another" error
+    updateMultiple(studioData);
+  }, [updateMultiple]);
 
-  useEffect(() => {
-    if (content && !form.title) {
-      update('title', content.title)
-      update('hook', content.hook)
-      update('body', content.body)
-      update('caption', content.caption)
-    }
-  }, [content])
-
-  const socialTemplates = templates.filter((t: any) => t.type === 'SOCIAL')
-  const pdfTemplates = templates.filter((t: any) => t.type === 'PDF')
-  const videoTemplates = templates.filter((t: any) => t.type === 'VIDEO_REEL')
-
-  const currentList =
-    activeTab === 'social'
-      ? socialTemplates
-      : activeTab === 'pdf'
-        ? pdfTemplates
-        : videoTemplates
-  const currentSelectedIdKey =
-    activeTab === 'social'
-      ? 'selectedSocialTemplateId'
-      : activeTab === 'pdf'
-        ? 'selectedPdfTemplateId'
-        : 'selectedVideoTemplateId'
-  const activeTemplateId = form[currentSelectedIdKey]
-  const activeTemplate = templates.find((t: any) => t.id === activeTemplateId)
-
-  useEffect(() => {
-    if (
-      !activeTemplate ||
-      activeTemplate.livePreviewType !== 'html_iframe' ||
-      !content
-    ) {
-      setPreviewHtml('')
-      return
-    }
-
-    let mounted = true
-    let subPath = 'raw'
-    if (activeTemplate.type === 'SOCIAL') {
-      subPath = `raw?slide=${activeSlide}`
-    }
-
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/templates/${activeTemplate.id}/${subPath}`,
-      {
-        headers: { Accept: 'text/plain' },
-      },
-    )
-      .then((r) => r.text())
-      .then((rawStr) => {
-        if (!mounted) return
-        try {
-          const compiler = Handlebars.compile(rawStr)
-          const hbData = {
-            title: form.title,
-            hook: form.hook,
-            body: form.body,
-            caption: form.caption,
-            primaryColor: form.primaryColor,
-            secondaryColor: form.secondaryColor,
-            operation: form.operationType === 'venta' ? 'VENTA' : 'ALQUILER',
-            operationLabel:
-              form.operationType === 'venta' ? 'EN VENTA' : 'EN ALQUILER',
-            price: formatPrice(Number(form.priceAmount) || 0, form.currency),
-            neighborhood: form.neighborhood,
-            city: form.city,
-            address: form.address || form.neighborhood || form.city,
-            location: `${form.neighborhood}, ${form.city}`,
-            bedrooms: form.bedrooms || '0',
-            bathrooms: form.bathrooms || '0',
-            parking: form.parkingSpaces || '0',
-            parkingSpaces: form.parkingSpaces || '0',
-            area: form.totalArea || form.builtArea || '0',
-            builtArea: form.builtArea || '0',
-            totalArea: form.totalArea || '0',
-            amenities: form.amenities,
-            agentName: form.agentName,
-            agentPhone: form.agentPhone,
-            agentEmail: form.agentEmail,
-            agentCompany: form.agentCompany,
-            companyName: form.agentCompany,
-            imageUrl: form.uploadedImages[0]?.url,
-            coverImageUrl: form.uploadedImages[0]?.url,
-            galleryImages: form.uploadedImages.map((img: any) => img.url),
-            isStory: false,
-          }
-          setPreviewHtml(compiler(hbData))
-        } catch (e) {
-          console.error('Handlebars compile error:', e)
-          setPreviewHtml(
-            "<div style='padding:20px;color:red;font-family:sans-serif;'>Error al compilar la vista previa</div>",
-          )
-        }
-      })
-
-    return () => {
-      mounted = false
-    }
-  }, [activeTemplate, form, content, activeSlide])
-
-  const previewSize = useMemo(() => {
-    if (activeTab === 'pdf') return { w: 794, h: 1123, scale: 0.45 }
-    return { w: 1080, h: 1080, scale: 0.32 }
-  }, [activeTab])
+  const initialData = {
+    selectedPdfTemplateId: form.selectedPdfTemplateId,
+    selectedSocialTemplateId: form.selectedSocialTemplateId,
+    selectedVideoTemplateId: form.selectedVideoTemplateId,
+    primaryColor: form.primaryColor,
+    secondaryColor: form.secondaryColor,
+    uploadedImages: form.uploadedImages,
+    operationType: form.operationType,
+    priceFormatted: formatPrice(Number(form.priceAmount) || 0, form.currency),
+    neighborhood: form.neighborhood,
+    city: form.city,
+    bedrooms: form.bedrooms,
+    bathrooms: form.bathrooms,
+    parkingSpaces: form.parkingSpaces,
+    totalArea: form.totalArea,
+    amenities: form.amenities,
+    agentName: form.agentName,
+    agentPhone: form.agentPhone,
+    agentEmail: form.agentEmail,
+    agentCompany: form.agentCompany,
+  };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 lg:h-[calc(100vh-250px)] lg:min-h-[600px] animate-in fade-in duration-500 max-w-6xl mx-auto w-full">
-      <div className="w-full lg:w-[400px] flex flex-col gap-6 lg:overflow-y-auto pr-2 custom-scrollbar text-left shrink-0">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight uppercase">
-            Estudio Creativo
-          </h2>
-          <p className="text-xs text-muted-foreground font-medium">
-            Personaliza el diseño y los textos finales.
-          </p>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-10 p-1 bg-muted/50 rounded-xl">
-            <TabsTrigger
-              value="social"
-              className="text-xs font-bold rounded-lg uppercase"
-            >
-              Redes
-            </TabsTrigger>
-            <TabsTrigger
-              value="pdf"
-              className="text-xs font-bold rounded-lg uppercase"
-            >
-              PDF
-            </TabsTrigger>
-            <TabsTrigger
-              value="video"
-              className="text-xs font-bold rounded-lg uppercase"
-            >
-              Video
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <Accordion
-          type="single"
-          collapsible
-          defaultValue="template"
-          className="w-full space-y-2 border-none"
-        >
-          <AccordionItem
-            value="template"
-            className="border rounded-xl bg-card px-4"
-          >
-            <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              1. Diseño Visual
-            </AccordionTrigger>
-            <AccordionContent className="pt-2 pb-4 px-1">
-              <div className="grid grid-cols-2 gap-4">
-                {currentList.map((t: any) => (
-                  <Card
-                    key={t.id}
-                    className={cn(
-                      'cursor-pointer overflow-hidden transition-all group border-2 shadow-sm rounded-xl',
-                      activeTemplateId === t.id
-                        ? 'border-primary ring-4 ring-primary/10 scale-95'
-                        : 'border-transparent hover:border-primary/20',
-                    )}
-                    onClick={() => update(currentSelectedIdKey, t.id)}
-                  >
-                    <div className="aspect-square bg-muted relative">
-                      {t.thumbnailUrl ? (
-                        <img
-                          src={t.thumbnailUrl}
-                          className="absolute inset-0 w-full h-full object-cover scale-101"
-                          alt={t.label}
-                        />
-                      ) : (
-                        <ImageIcon className="h-6 w-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20" />
-                      )}
-                      {activeTemplateId === t.id && (
-                        <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                          <Check className="h-8 w-8 text-primary bg-white rounded-full p-1 shadow-xl" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2 text-[9px] font-black truncate text-center bg-card uppercase tracking-tighter">
-                      {t.label}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase ml-1">
-                    Color Primario
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      className="w-10 h-10 p-1 cursor-pointer rounded-lg border-2"
-                      value={form.primaryColor}
-                      onChange={(e) => update('primaryColor', e.target.value)}
-                    />
-                    <Input
-                      className="h-10 text-[10px] font-mono uppercase bg-background"
-                      value={form.primaryColor}
-                      onChange={(e) => update('primaryColor', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase ml-1">
-                    Color Secundario
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      className="w-10 h-10 p-1 cursor-pointer rounded-lg border-2"
-                      value={form.secondaryColor}
-                      onChange={(e) => update('secondaryColor', e.target.value)}
-                    />
-                    <Input
-                      className="h-10 text-[10px] font-mono uppercase bg-background"
-                      value={form.secondaryColor}
-                      onChange={(e) => update('secondaryColor', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem
-            value="content"
-            className="border rounded-xl bg-card px-4"
-          >
-            <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              2. Textos Publicitarios
-            </AccordionTrigger>
-            <AccordionContent className="pt-2 pb-4 space-y-4 px-1">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase ml-1">
-                  Título Sugerido
-                </Label>
-                <Input
-                  className="h-9 text-xs bg-background"
-                  value={form.title}
-                  onChange={(e) => update('title', e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase ml-1">
-                  Gancho (Hook)
-                </Label>
-                <Textarea
-                  className="text-xs resize-none bg-background"
-                  rows={2}
-                  value={form.hook}
-                  onChange={(e) => update('hook', e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase ml-1">
-                  Cuerpo / Descripción
-                </Label>
-                <Textarea
-                  className="text-xs resize-none bg-background"
-                  rows={4}
-                  value={form.body}
-                  onChange={(e) => update('body', e.target.value)}
-                />
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem
-            value="agent"
-            className="border rounded-xl bg-card px-4"
-          >
-            <AccordionTrigger className="hover:no-underline text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              3. Información de Contacto
-            </AccordionTrigger>
-            <AccordionContent className="pt-2 pb-4 space-y-3 px-1">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase ml-1">
-                  Nombre
-                </Label>
-                <Input
-                  className="h-9 text-xs bg-background"
-                  value={form.agentName}
-                  onChange={(e) => update('agentName', e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase ml-1">
-                  WhatsApp
-                </Label>
-                <Input
-                  className="h-9 text-xs bg-background"
-                  value={form.agentPhone}
-                  onChange={(e) => update('agentPhone', e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase ml-1">
-                  Email
-                </Label>
-                <Input
-                  className="h-9 text-xs bg-background"
-                  value={form.agentEmail}
-                  onChange={(e) => update('agentEmail', e.target.value)}
-                />
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+    <div className="max-w-6xl mx-auto w-full">
+      <div className="mb-8 text-center">
+        <h2 className="text-3xl font-bold tracking-tight uppercase">Estudio Creativo</h2>
+        <p className="text-muted-foreground mt-2">Personaliza cada producto de marketing de manera independiente.</p>
       </div>
-
-      <div className="flex-1 bg-[#ebeef2] rounded-3xl border-4 border-white flex flex-col items-center justify-between overflow-hidden relative shadow-inner p-4 pb-0">
-        <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-xl z-10 flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-          Previsualización en Vivo
-        </div>
-
-        <div className="w-full flex-1 flex items-center justify-center relative min-h-[400px]">
-          {activeTemplate?.livePreviewType === 'html_iframe' ? (
-            previewHtml ? (
-              <div
-                className="relative shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] bg-white overflow-hidden rounded-sm shrink-0 aspect-square max-w-full"
-                style={{
-                  width: `${previewSize.w * previewSize.scale}px`,
-                  height: `${previewSize.h * previewSize.scale}px`,
-                }}
-              >
-                <iframe
-                  ref={iframeRef}
-                  sandbox="allow-same-origin allow-scripts"
-                  srcDoc={previewHtml}
-                  scrolling="no"
-                  className="absolute top-0 left-0 border-none pointer-events-none overflow-hidden"
-                  style={{
-                    width: `${previewSize.w}px`,
-                    height: `${previewSize.h}px`,
-                    transform: `scale(${previewSize.scale})`,
-                    transformOrigin: 'top left',
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-                  <Sparkles className="h-6 w-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                </div>
-                <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] animate-pulse">
-                  Generando Vista...
-                </span>
-              </div>
-            )
-          ) : activeTemplate?.livePreviewType === 'static_video' ? (
-            activeTemplate.demoVideoUrl ? (
-              <div className="relative aspect-[9/16] h-full max-h-[520px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden border-[12px] border-black ring-4 ring-white/20 animate-in zoom-in-95 duration-500 shrink-0">
-                <video
-                  src={activeTemplate.demoVideoUrl}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-              </div>
-            ) : (
-              <div className="text-muted-foreground text-xs uppercase font-black tracking-widest bg-white/50 px-6 py-3 rounded-full">
-                Video demo no disponible
-              </div>
-            )
-          ) : (
-            <div className="text-muted-foreground text-[10px] uppercase font-black tracking-[0.2em] bg-white/50 px-8 py-4 rounded-full shadow-sm">
-              Selecciona una plantilla
-            </div>
-          )}
-        </div>
-
-        {/* Carousel Strip */}
-        {activeTab === 'social' && activeTemplate?.type === 'SOCIAL' && (
-          <div className="w-full h-24 bg-white border-t border-x rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] p-4 flex gap-2 sm:gap-3 overflow-x-auto custom-scrollbar md:justify-center items-center">
-            {[
-              { id: 'cover', label: 'Portada' },
-              { id: 'features', label: 'Info' },
-              { id: 'amenities', label: 'Extras' },
-              { id: 'photo', label: 'Fotos' },
-              { id: 'contact', label: 'Cierre' },
-            ].map((slide) => (
-              <button
-                key={slide.id}
-                onClick={() => setActiveSlide(slide.id)}
-                className={cn(
-                  'h-full px-3 sm:px-4 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border-2 shrink-0',
-                  activeSlide === slide.id
-                    ? 'bg-primary/5 border-primary shadow-sm scale-105'
-                    : 'bg-muted/30 border-transparent hover:bg-muted',
-                )}
-              >
-                <div
-                  className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black',
-                    activeSlide === slide.id
-                      ? 'bg-primary text-white'
-                      : 'bg-background text-muted-foreground',
-                  )}
-                >
-                  {slide.id === 'photo' ? (
-                    <ImageIcon className="w-3 h-3" />
-                  ) : (
-                    slide.label.charAt(0)
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    'text-[9px] font-bold uppercase tracking-widest',
-                    activeSlide === slide.id
-                      ? 'text-primary'
-                      : 'text-muted-foreground',
-                  )}
-                >
-                  {slide.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      
+      <CreativeStudio 
+        propertyId="new"
+        initialData={initialData}
+        content={content}
+        templates={templates}
+        onSave={handleSave}
+        isGenerating={isGenerating}
+        mode="create"
+      />
     </div>
-  )
+  );
 }
