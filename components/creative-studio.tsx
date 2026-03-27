@@ -116,7 +116,8 @@ export function CreativeStudio({
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       if (mode === 'create') {
-        onSave(newData);
+        // Move outside of the state updater to avoid "Cannot update a component while rendering another"
+        setTimeout(() => onSave(newData), 0);
       }
       return newData;
     });

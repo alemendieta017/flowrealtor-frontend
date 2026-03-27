@@ -1147,7 +1147,7 @@ function Step4({ form, updateMultiple, templates, content, isGenerating }: any) 
     updateMultiple(studioData);
   }, [updateMultiple]);
 
-  const initialData = {
+  const initialData = useMemo(() => ({
     selectedPdfTemplateId: form.selectedPdfTemplateId,
     selectedSocialTemplateId: form.selectedSocialTemplateId,
     selectedVideoTemplateId: form.selectedVideoTemplateId,
@@ -1167,7 +1167,28 @@ function Step4({ form, updateMultiple, templates, content, isGenerating }: any) 
     agentPhone: form.agentPhone,
     agentEmail: form.agentEmail,
     agentCompany: form.agentCompany,
-  };
+  }), [
+    form.selectedPdfTemplateId,
+    form.selectedSocialTemplateId,
+    form.selectedVideoTemplateId,
+    form.primaryColor,
+    form.secondaryColor,
+    form.uploadedImages,
+    form.operationType,
+    form.priceAmount,
+    form.currency,
+    form.neighborhood,
+    form.city,
+    form.bedrooms,
+    form.bathrooms,
+    form.parkingSpaces,
+    form.totalArea,
+    form.amenities,
+    form.agentName,
+    form.agentPhone,
+    form.agentEmail,
+    form.agentCompany,
+  ]);
 
   return (
     <div className="max-w-6xl mx-auto w-full">
