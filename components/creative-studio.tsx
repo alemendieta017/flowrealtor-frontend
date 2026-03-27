@@ -337,6 +337,52 @@ export function CreativeStudio({
                   </div>
                 </>
               )}
+              {activeTab === 'video' && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase ml-1">Título del Video</Label>
+                    <Input
+                      className="text-xs bg-background h-9 rounded-lg"
+                      value={formData.videoTitle}
+                      onChange={(e) => updateField('videoTitle', e.target.value)}
+                      placeholder="Título del video"
+                    />
+                  </div>
+                  <div className="space-y-3 pt-2">
+                    <Label className="text-[10px] font-bold uppercase ml-1">Guion por Escenas</Label>
+                    <div className="space-y-3">
+                      {formData.videoScript.scenes.map((scene: any, idx: number) => (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                              Escena {idx + 1}
+                            </span>
+                            <span className="text-[9px] font-bold text-muted-foreground/60">
+                              {scene.suggestedDuration}s
+                            </span>
+                          </div>
+                          <Textarea
+                            className="text-xs bg-background rounded-lg resize-none"
+                            rows={2}
+                            value={scene.text}
+                            onChange={(e) => {
+                              const newScenes = [...formData.videoScript.scenes];
+                              newScenes[idx] = { ...newScenes[idx], text: e.target.value };
+                              updateField('videoScript', { ...formData.videoScript, scenes: newScenes });
+                            }}
+                            placeholder={`Texto de la escena ${idx + 1}`}
+                          />
+                        </div>
+                      ))}
+                      {formData.videoScript.scenes.length === 0 && (
+                        <p className="text-[10px] text-muted-foreground italic text-center py-4">
+                          No hay escenas generadas para este video.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </AccordionContent>
           </AccordionItem>
         </Accordion>
