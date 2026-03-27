@@ -231,10 +231,10 @@ function PostPreview({
         alt={title}
         className="absolute inset-0 w-full h-full object-cover scale-101"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
 
       <div
-        className={`absolute top-4 left-4 px-3 py-1.5 rounded-full bg-gradient-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} text-sm font-bold uppercase tracking-wider`}
+        className={`absolute top-4 left-4 px-3 py-1.5 rounded-full bg-linear-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} text-sm font-bold uppercase tracking-wider`}
       >
         {operationType === "venta" ? "En Venta" : "En Alquiler"}
       </div>
@@ -254,7 +254,7 @@ function PostPreview({
         )}
 
         <div
-          className={`inline-block px-4 py-2 rounded-lg bg-gradient-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} font-bold text-lg`}
+          className={`inline-block px-4 py-2 rounded-lg bg-linear-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} font-bold text-lg`}
         >
           {price}
         </div>

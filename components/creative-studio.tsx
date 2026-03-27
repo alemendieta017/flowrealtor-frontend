@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Sparkles, 
-  FileText, 
-  ImageIcon, 
-  Video as VideoIcon, 
-  Upload, 
-  GripVertical, 
-  X, 
-  Loader2, 
-  Palette, 
-  Layout, 
+import {
+  Sparkles,
+  FileText,
+  ImageIcon,
+  Video as VideoIcon,
+  Upload,
+  GripVertical,
+  X,
+  Loader2,
+  Palette,
+  Layout,
   Type,
   Hash
 } from 'lucide-react';
@@ -129,9 +129,9 @@ export function CreativeStudio({
     return formData.selectedVideoTemplateId;
   }, [activeTab, formData]);
 
-  const activeTemplate = useMemo(() => 
-    templates.find(t => t.id === activeTemplateId), 
-  [templates, activeTemplateId]);
+  const activeTemplate = useMemo(() =>
+    templates.find(t => t.id === activeTemplateId),
+    [templates, activeTemplateId]);
 
   useEffect(() => {
     if (!activeTemplate || activeTemplate.livePreviewType !== 'html_iframe') {
@@ -143,7 +143,7 @@ export function CreativeStudio({
     setIsGeneratingPreview(true);
     let subPath = activeTemplate.type === 'SOCIAL' ? `raw?slide=${activeSlide}` : 'raw';
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    
+
     fetch(`${apiUrl}/api/templates/${activeTemplate.id}/${subPath}`, {
       headers: { Accept: 'text/plain' },
     })
@@ -154,10 +154,10 @@ export function CreativeStudio({
           const compiler = Handlebars.compile(rawStr);
           let currentImageUrl = formData.uploadedImages[0]?.url;
           if (activeTab === 'social') {
-             if (activeSlide === 'photo') currentImageUrl = formData.uploadedImages[3]?.url || formData.uploadedImages[0]?.url;
-             else if (activeSlide === 'features') currentImageUrl = formData.uploadedImages[1]?.url || formData.uploadedImages[0]?.url;
-             else if (activeSlide === 'amenities') currentImageUrl = formData.uploadedImages[2]?.url || formData.uploadedImages[0]?.url;
-             else if (activeSlide === 'contact') currentImageUrl = formData.uploadedImages[formData.uploadedImages.length - 1]?.url || formData.uploadedImages[0]?.url;
+            if (activeSlide === 'photo') currentImageUrl = formData.uploadedImages[3]?.url || formData.uploadedImages[0]?.url;
+            else if (activeSlide === 'features') currentImageUrl = formData.uploadedImages[1]?.url || formData.uploadedImages[0]?.url;
+            else if (activeSlide === 'amenities') currentImageUrl = formData.uploadedImages[2]?.url || formData.uploadedImages[0]?.url;
+            else if (activeSlide === 'contact') currentImageUrl = formData.uploadedImages[formData.uploadedImages.length - 1]?.url || formData.uploadedImages[0]?.url;
           }
 
           const hbData = {
@@ -225,19 +225,19 @@ export function CreativeStudio({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 w-full animate-in fade-in duration-500 min-h-[600px]">
-      <div className="flex lg:flex-col gap-2 shrink-0 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full animate-in fade-in duration-500 min-h-[600px]">
+      <div className="flex lg:flex-col gap-2 shrink-0 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 order-1">
         <TabButton active={activeTab === 'brief'} onClick={() => setActiveTab('brief')} icon={<FileText className="h-5 w-5" />} label="Brief PDF" />
         <TabButton active={activeTab === 'social'} onClick={() => setActiveTab('social')} icon={<ImageIcon className="h-5 w-5" />} label="Redes Sociales" />
         <TabButton active={activeTab === 'video'} onClick={() => setActiveTab('video')} icon={<VideoIcon className="h-5 w-5" />} label="Video Reel" />
       </div>
 
-      <div className="w-full lg:w-[400px] flex flex-col gap-4 lg:overflow-y-auto pr-2 custom-scrollbar shrink-0">
+      <div className="w-full lg:w-[400px] flex flex-col gap-4 lg:overflow-y-auto pr-0 lg:pr-2 custom-scrollbar shrink-0 order-3 lg:order-2">
         <Accordion type="multiple" defaultValue={['content', 'design']} className="space-y-3">
           <AccordionItem value="media" className="border rounded-xl bg-card px-4">
             <AccordionTrigger className="text-xs font-bold uppercase tracking-widest text-muted-foreground">1. Galería de Medios</AccordionTrigger>
             <AccordionContent className="pt-2 pb-4 space-y-4">
-               <DragDropContext onDragEnd={handleDragEnd}>
+              <DragDropContext onDragEnd={handleDragEnd}>
                 <Droppable droppableId="gallery" direction="vertical">
                   {(provided) => (
                     <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-3 gap-2">
@@ -291,8 +291,8 @@ export function CreativeStudio({
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase ml-1">Plantilla Seleccionada</Label>
-                <Select 
-                  value={activeTab === 'brief' ? formData.selectedPdfTemplateId : activeTab === 'social' ? formData.selectedSocialTemplateId : formData.selectedVideoTemplateId} 
+                <Select
+                  value={activeTab === 'brief' ? formData.selectedPdfTemplateId : activeTab === 'social' ? formData.selectedSocialTemplateId : formData.selectedVideoTemplateId}
                   onValueChange={(v) => updateField(activeTab === 'brief' ? 'selectedPdfTemplateId' : activeTab === 'social' ? 'selectedSocialTemplateId' : 'selectedVideoTemplateId', v)}
                 >
                   <SelectTrigger className="text-xs bg-background h-10 rounded-xl"><SelectValue /></SelectTrigger>
@@ -349,40 +349,40 @@ export function CreativeStudio({
         )}
       </div>
 
-      <div className="flex-1 bg-[#ebeef2] rounded-3xl border-4 border-white flex flex-col items-center justify-center overflow-hidden relative p-4 min-h-[500px] shadow-inner" style={{ perspective: "1000px" }}>
+      <div className="flex-1 bg-[#ebeef2] rounded-3xl border-4 border-white flex flex-col items-center justify-center overflow-hidden relative p-4 min-h-[400px] lg:min-h-[500px] shadow-inner order-2 lg:order-3" style={{ perspective: "1000px" }}>
         {isGeneratingPreview && <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] z-30 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
-        
+
         <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase border shadow-sm z-20 flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
           Live Preview: {activeTab.toUpperCase()}
         </div>
 
-        <div 
+        <div
           ref={containerRef}
-          className="w-full flex-1 flex items-center justify-center relative z-10 py-12 px-4"
+          className="w-full flex-1 flex items-center justify-center relative z-10 py-6 lg:py-12 px-4"
         >
           {activeTab === "video" ? (
-             <div className="text-xs text-muted-foreground bg-white/50 px-8 py-4 rounded-full font-bold uppercase tracking-widest shadow-sm">El video requiere regeneración para ver cambios</div>
+            <div className="text-xs text-muted-foreground bg-white/50 px-8 py-4 rounded-full font-bold uppercase tracking-widest shadow-sm">El video requiere regeneración para ver cambios</div>
           ) : previewHtml ? (
-              <div 
-                className="relative shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white overflow-hidden transition-transform duration-300 pointer-events-none"
-                style={{
-                  width: `${previewSize.w}px`,
-                  height: `${previewSize.h}px`,
-                  transform: `scale(${scale})`,
-                  transformOrigin: 'center center !important',
-                  position: 'absolute'
-                }}
-              >
-                <iframe srcDoc={previewHtml} scrolling="no" className="w-full h-full border-none pointer-events-none" />
-              </div>
+            <div
+              className="relative shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white overflow-hidden transition-transform duration-300 pointer-events-none"
+              style={{
+                width: `${previewSize.w}px`,
+                height: `${previewSize.h}px`,
+                transform: `scale(${scale})`,
+                transformOrigin: 'center center !important',
+                position: 'absolute'
+              }}
+            >
+              <iframe srcDoc={previewHtml} scrolling="no" className="w-full h-full border-none rounded-lg pointer-events-none" />
+            </div>
           ) : (
             <div className="text-xs text-muted-foreground bg-white/50 px-8 py-4 rounded-full font-bold uppercase tracking-widest shadow-sm">Cargando vista previa...</div>
           )}
         </div>
 
         {activeTab === "social" && (
-          <div className="w-full h-20 bg-white border-t rounded-t-3xl p-3 flex gap-2 overflow-x-auto relative z-20 items-center justify-center shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+          <div className="w-full h-16 lg:h-20 bg-white border-t rounded-t-3xl p-2 lg:p-3 flex gap-2 overflow-x-auto relative z-20 items-center justify-start md:justify-center shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
             {["cover", "features", "amenities", "photo", "contact"].map((slide) => (
               <button key={slide} onClick={() => setActiveSlide(slide)} className={cn("px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all shrink-0 min-w-[80px] border-2", activeSlide === slide ? "bg-primary text-white border-primary" : "bg-muted hover:bg-muted/80 text-muted-foreground border-transparent")}>
                 {slide}
@@ -397,7 +397,7 @@ export function CreativeStudio({
 
 function TabButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
   return (
-    <button onClick={onClick} className={cn("flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all min-w-[100px] lg:w-full", active ? "bg-white border-primary text-primary shadow-lg ring-4 ring-primary/5" : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50")}>
+    <button onClick={onClick} className={cn("flex flex-col items-center justify-center gap-2 p-3 lg:p-4 rounded-2xl border-2 transition-all min-w-[80px] lg:w-full", active ? "bg-white border-primary text-primary shadow-lg ring-4 ring-primary/5" : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50")}>
       {icon}
       <span className="text-[10px] font-bold uppercase tracking-tight">{label}</span>
     </button>
