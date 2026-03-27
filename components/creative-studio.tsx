@@ -96,11 +96,16 @@ export function CreativeStudio({
     }));
   }, [initialData, content, templates]);
 
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
       if (entries[0]) {
-        setContainerWidth(entries[0].contentRect.width);
+        setContainerSize({
+          w: entries[0].contentRect.width,
+          h: entries[0].contentRect.height,
+        });
       }
     });
     observer.observe(containerRef.current);
@@ -199,9 +204,12 @@ export function CreativeStudio({
   }, [activeTab]);
 
   const scale = useMemo(() => {
-    if (!containerWidth) return 0.3;
-    return containerWidth / previewSize.w;
-  }, [containerWidth, previewSize]);
+    if (!containerSize.w || !containerSize.h) return 0.3;
+    const PADDING_BUFFER = 60;
+    const availableW = containerSize.w - PADDING_BUFFER;
+    const availableH = containerSize.h - PADDING_BUFFER;
+    return Math.min(availableW / previewSize.w, availableH / previewSize.h);
+  }, [containerSize, previewSize]);
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -340,7 +348,7 @@ export function CreativeStudio({
         )}
       </div>
 
-      <div className="flex-1 bg-[#ebeef2] rounded-3xl border-4 border-white flex flex-col items-center justify-center overflow-hidden relative p-4 min-h-[500px] shadow-inner">
+      <div className="flex-1 bg-[#ebeef2] rounded-3xl border-4 border-white flex flex-col items-center justify-center overflow-hidden relative p-4 min-h-[500px] shadow-inner" style={{ perspective: "1000px" }}>
         {isGeneratingPreview && <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] z-30 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
         
         <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase border shadow-sm z-20 flex items-center gap-2">
@@ -348,28 +356,25 @@ export function CreativeStudio({
           Live Preview: {activeTab.toUpperCase()}
         </div>
 
-        <div className="w-full flex-1 flex items-center justify-center relative z-10 py-12 px-4">
+        <div 
+          ref={containerRef}
+          className="w-full flex-1 flex items-center justify-center relative z-10 py-12 px-4"
+        >
           {activeTab === "video" ? (
              <div className="text-xs text-muted-foreground bg-white/50 px-8 py-4 rounded-full font-bold uppercase tracking-widest shadow-sm">El video requiere regeneración para ver cambios</div>
           ) : previewHtml ? (
-            <div 
-              ref={containerRef}
-              className={cn(
-                "relative shadow-2xl bg-white overflow-hidden rounded-sm transition-all duration-300 mx-auto w-full",
-                activeTab === 'brief' ? "aspect-[794/1123] max-w-[400px]" : "aspect-square max-w-[450px]"
-              )}
-            >
               <div 
-                className="absolute top-0 left-0 origin-top-left"
+                className="relative shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white overflow-hidden transition-transform duration-300 pointer-events-none"
                 style={{
                   width: `${previewSize.w}px`,
                   height: `${previewSize.h}px`,
                   transform: `scale(${scale})`,
+                  transformOrigin: 'center center !important',
+                  position: 'absolute'
                 }}
               >
                 <iframe srcDoc={previewHtml} scrolling="no" className="w-full h-full border-none pointer-events-none" />
               </div>
-            </div>
           ) : (
             <div className="text-xs text-muted-foreground bg-white/50 px-8 py-4 rounded-full font-bold uppercase tracking-widest shadow-sm">Cargando vista previa...</div>
           )}
