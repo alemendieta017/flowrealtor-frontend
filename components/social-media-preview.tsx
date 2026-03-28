@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Logo } from "@/components/logo";
 
 interface SocialMediaPreviewProps {
   images: string[];
@@ -261,7 +262,7 @@ function PostPreview({
       </div>
 
       <div className="absolute bottom-4 right-4">
-        <img src="/logo.svg" alt="flowRealtor" className="h-8 opacity-80" />
+        <Logo size="sm" className="opacity-80" />
       </div>
     </div>
   );
@@ -318,7 +319,7 @@ function StoryPreview({
         )}
 
         <div
-          className={`inline-block px-6 py-3 rounded-xl bg-gradient-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} font-bold text-xl`}
+          className={`inline-block px-6 py-3 rounded-xl bg-linear-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} font-bold text-xl`}
         >
           {price}
         </div>
@@ -342,7 +343,7 @@ function StoryPreview({
       </div>
 
       <div className="absolute top-6 right-4">
-        <img src="/logo.svg" alt="flowRealtor" className="h-6 opacity-80" />
+        <Logo size="sm" className="opacity-80" />
       </div>
     </div>
   );

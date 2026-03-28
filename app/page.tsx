@@ -109,7 +109,7 @@ export default function DashboardPage() {
         setProperties(res.data);
         setTotalCount(res.meta.total);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
 
     // Fetch counts (simplified for MVP)
@@ -119,7 +119,7 @@ export default function DashboardPage() {
         setActiveCount(res.data.filter((p) => p.status === "active").length);
         setDraftCount(res.data.filter((p) => p.status === "draft").length);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const stats = [
@@ -241,7 +241,7 @@ export default function DashboardPage() {
             {/* Properties list */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Mis Propiedades</h2>
+                <h2 className="text-lg font-semibold">Ultimas propiedades</h2>
                 <Button asChild variant="outline" size="sm" className="gap-1">
                   <Link href="/properties/new">
                     <Plus className="h-3.5 w-3.5" /> Agregar

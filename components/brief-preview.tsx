@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Logo } from "@/components/logo";
 import { useState } from "react";
 
 interface BriefPreviewProps {
@@ -114,7 +115,7 @@ export function BriefPreview({
             <div className="bg-white rounded-lg shadow-xl overflow-hidden max-w-lg mx-auto aspect-[8.5/11]">
               <div className={`${currentTheme.primary} p-4 text-white`}>
                 <div className="flex items-center justify-between">
-                  <img src="/logo.svg" alt="Logo" className="h-8" />
+                  <Logo size="sm" />
                   <Badge className="bg-white/20 text-white border-0">
                     {property.operationType === "venta"
                       ? "EN VENTA"
