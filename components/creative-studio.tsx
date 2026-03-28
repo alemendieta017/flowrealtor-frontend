@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
   Sparkles,
   FileText,
@@ -65,12 +66,16 @@ export function CreativeStudio({
     videoTitle: content?.videoTitle || content?.title || '',
     videoScript: content?.videoScript || { scenes: [] },
     selectedVideoTemplateId: initialData?.selectedVideoTemplateId || templates.find(t => t.type === 'VIDEO_REEL')?.id || '',
-    primaryColor: initialData?.primaryColor || '#1e40af',
-    secondaryColor: initialData?.secondaryColor || '#f59e0b',
+    primaryColor: initialData?.primaryColor || '#2563eb',
+    secondaryColor: initialData?.secondaryColor || '#1e40af',
     uploadedImages: initialData?.uploadedImages || [],
   });
 
   const [activeSlide, setActiveSlide] = useState('cover');
+
+  // Debounced form data for expensive operations (preview and parent update)
+  const debouncedFormData = useDebounce(formData, 300);
+
   const [previewHtml, setPreviewHtml] = useState<string>('');
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -113,15 +118,15 @@ export function CreativeStudio({
   }, [activeTab]);
 
   const updateField = (field: string, value: any) => {
-    setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-      if (mode === 'create') {
-        // Move outside of the state updater to avoid "Cannot update a component while rendering another"
-        setTimeout(() => onSave(newData), 0);
-      }
-      return newData;
-    });
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // Sync with parent when debounced data changes
+  useEffect(() => {
+    if (mode === 'create') {
+      onSave(debouncedFormData);
+    }
+  }, [debouncedFormData, mode, onSave]);
 
   const activeTemplateId = useMemo(() => {
     if (activeTab === 'brief') return formData.selectedPdfTemplateId;
@@ -133,6 +138,9 @@ export function CreativeStudio({
     templates.find(t => t.id === activeTemplateId),
     [templates, activeTemplateId]);
 
+  const compilerCache = useRef<Record<string, Handlebars.TemplateDelegate>>({});
+  const templateCache = useRef<Record<string, string>>({});
+
   useEffect(() => {
     if (!activeTemplate || activeTemplate.livePreviewType !== 'html_iframe') {
       setPreviewHtml('');
@@ -140,64 +148,82 @@ export function CreativeStudio({
     }
 
     let mounted = true;
-    setIsGeneratingPreview(true);
-    let subPath = activeTemplate.type === 'SOCIAL' ? `raw?slide=${activeSlide}` : 'raw';
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    let subPath = activeTemplate.type === 'SOCIAL' ? `raw?slide=${activeSlide}` : 'raw';
+    const cacheKey = `${activeTemplate.id}-${subPath}`;
 
-    fetch(`${apiUrl}/api/templates/${activeTemplate.id}/${subPath}`, {
-      headers: { Accept: 'text/plain' },
-    })
-      .then(r => r.text())
-      .then(rawStr => {
-        if (!mounted) return;
-        try {
-          const compiler = Handlebars.compile(rawStr);
-          let currentImageUrl = formData.uploadedImages[0]?.url;
-          if (activeTab === 'social') {
-            if (activeSlide === 'photo') currentImageUrl = formData.uploadedImages[3]?.url || formData.uploadedImages[0]?.url;
-            else if (activeSlide === 'features') currentImageUrl = formData.uploadedImages[1]?.url || formData.uploadedImages[0]?.url;
-            else if (activeSlide === 'amenities') currentImageUrl = formData.uploadedImages[2]?.url || formData.uploadedImages[0]?.url;
-            else if (activeSlide === 'contact') currentImageUrl = formData.uploadedImages[formData.uploadedImages.length - 1]?.url || formData.uploadedImages[0]?.url;
-          }
-
-          const hbData = {
-            title: activeTab === 'brief' ? formData.briefTitle : activeTab === 'social' ? formData.socialPostTitle : formData.videoTitle,
-            hook: formData.briefHook,
-            body: formData.briefDescripcion,
-            caption: formData.socialPostCaption,
-            primaryColor: formData.primaryColor,
-            secondaryColor: formData.secondaryColor,
-            operationLabel: initialData?.operationType === 'venta' ? 'EN VENTA' : 'EN ALQUILER',
-            isRental: initialData?.operationType === 'alquiler',
-            price: initialData?.priceFormatted || 'Consultar',
-            location: `${initialData?.neighborhood || ''}, ${initialData?.city || ''}`,
-            bedrooms: initialData?.bedrooms || '0',
-            bathrooms: initialData?.bathrooms || '0',
-            parking: initialData?.parkingSpaces || '0',
-            area: initialData?.totalArea || '0',
-            amenities: initialData?.amenities || [],
-            agentName: initialData?.agentName || 'Agente',
-            agentPhone: initialData?.agentPhone,
-            agentEmail: initialData?.agentEmail,
-            companyName: initialData?.agentCompany,
-            imageUrl: currentImageUrl,
-            coverImageUrl: formData.uploadedImages[0]?.url,
-            galleryImages: formData.uploadedImages.map((img: any) => img.url),
-            isStory: false,
-          };
-          setPreviewHtml(compiler(hbData));
-        } catch (e) {
-          console.error('Handlebars error:', e);
-        } finally {
-          if (mounted) setIsGeneratingPreview(false);
+    const generatePreview = (rawStr: string) => {
+      if (!mounted) return;
+      try {
+        let compiler = compilerCache.current[cacheKey];
+        if (!compiler) {
+          compiler = Handlebars.compile(rawStr);
+          compilerCache.current[cacheKey] = compiler;
         }
-      })
-      .catch(() => {
+
+        let currentImageUrl = debouncedFormData.uploadedImages[0]?.url;
+        if (activeTab === 'social') {
+          if (activeSlide === 'photo') currentImageUrl = debouncedFormData.uploadedImages[3]?.url || debouncedFormData.uploadedImages[0]?.url;
+          else if (activeSlide === 'features') currentImageUrl = debouncedFormData.uploadedImages[1]?.url || debouncedFormData.uploadedImages[0]?.url;
+          else if (activeSlide === 'amenities') currentImageUrl = debouncedFormData.uploadedImages[2]?.url || debouncedFormData.uploadedImages[0]?.url;
+          else if (activeSlide === 'contact') currentImageUrl = debouncedFormData.uploadedImages[debouncedFormData.uploadedImages.length - 1]?.url || debouncedFormData.uploadedImages[0]?.url;
+        }
+
+        const hbData = {
+          title: activeTab === 'brief' ? debouncedFormData.briefTitle : activeTab === 'social' ? debouncedFormData.socialPostTitle : debouncedFormData.videoTitle,
+          hook: debouncedFormData.briefHook,
+          body: debouncedFormData.briefDescripcion,
+          caption: debouncedFormData.socialPostCaption,
+          primaryColor: debouncedFormData.primaryColor,
+          secondaryColor: debouncedFormData.secondaryColor,
+          operationLabel: initialData?.operationType === 'venta' ? 'EN VENTA' : 'EN ALQUILER',
+          isRental: initialData?.operationType === 'alquiler',
+          price: initialData?.priceFormatted || 'Consultar',
+          location: `${initialData?.neighborhood || ''}, ${initialData?.city || ''}`,
+          bedrooms: initialData?.bedrooms || '0',
+          bathrooms: initialData?.bathrooms || '0',
+          parking: initialData?.parkingSpaces || '0',
+          area: initialData?.totalArea || '0',
+          amenities: initialData?.amenities || [],
+          agentName: initialData?.agentName || 'Agente',
+          agentPhone: initialData?.agentPhone,
+          agentEmail: initialData?.agentEmail,
+          companyName: initialData?.agentCompany,
+          imageUrl: currentImageUrl,
+          coverImageUrl: debouncedFormData.uploadedImages[0]?.url,
+          galleryImages: debouncedFormData.uploadedImages.map((img: any) => img.url),
+          isStory: false,
+        };
+        setPreviewHtml(compiler(hbData));
+      } catch (e) {
+        console.error('Handlebars error:', e);
+      } finally {
         if (mounted) setIsGeneratingPreview(false);
-      });
+      }
+    };
+
+    setIsGeneratingPreview(true);
+
+    if (templateCache.current[cacheKey]) {
+      generatePreview(templateCache.current[cacheKey]);
+    } else {
+      fetch(`${apiUrl}/api/templates/${activeTemplate.id}/${subPath}`, {
+        headers: { Accept: 'text/plain' },
+      })
+        .then(r => r.text())
+        .then(rawStr => {
+          if (mounted) {
+            templateCache.current[cacheKey] = rawStr;
+            generatePreview(rawStr);
+          }
+        })
+        .catch(() => {
+          if (mounted) setIsGeneratingPreview(false);
+        });
+    }
 
     return () => { mounted = false; };
-  }, [activeTemplate, formData, activeSlide, activeTab, initialData]);
+  }, [activeTemplate, debouncedFormData, activeSlide, activeTab, initialData]);
 
   const previewSize = useMemo(() => {
     if (activeTab === 'brief') return { w: 794, h: 1123 };
@@ -395,7 +421,7 @@ export function CreativeStudio({
         )}
       </div>
 
-      <div className="flex-1 bg-[#ebeef2] rounded-3xl border-4 border-white flex flex-col items-center justify-center overflow-hidden relative p-4 min-h-[400px] lg:min-h-[500px] shadow-inner order-2 lg:order-3" style={{ perspective: "1000px" }}>
+      <div className="flex-1 bg-[#ebeef2] rounded-[2.5rem] border-[6px] border-white flex flex-col overflow-hidden relative min-h-[400px] lg:min-h-[600px] shadow-2xl order-2 lg:order-3" style={{ perspective: "1000px" }}>
         {isGeneratingPreview && <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] z-30 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
 
         <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase border shadow-sm z-20 flex items-center gap-2">
@@ -405,7 +431,7 @@ export function CreativeStudio({
 
         <div
           ref={containerRef}
-          className="w-full flex-1 flex items-center justify-center relative z-10 py-6 lg:py-12 px-4"
+          className="w-full flex-1 flex items-center justify-center relative z-10 py-10 lg:py-16 px-6"
         >
           {activeTab === "video" ? (
             <div className="text-xs text-muted-foreground bg-white/50 px-8 py-4 rounded-full font-bold uppercase tracking-widest shadow-sm">El video requiere regeneración para ver cambios</div>
@@ -428,12 +454,23 @@ export function CreativeStudio({
         </div>
 
         {activeTab === "social" && (
-          <div className="w-full h-16 lg:h-20 bg-white border-t rounded-t-3xl p-2 lg:p-3 flex gap-2 overflow-x-auto relative z-20 items-center justify-start md:justify-center shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-            {["cover", "features", "amenities", "photo", "contact"].map((slide) => (
-              <button key={slide} onClick={() => setActiveSlide(slide)} className={cn("px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all shrink-0 min-w-[80px] border-2", activeSlide === slide ? "bg-primary text-white border-primary" : "bg-muted hover:bg-muted/80 text-muted-foreground border-transparent")}>
-                {slide}
-              </button>
-            ))}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 w-fit max-w-[95%] animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white/90 backdrop-blur-xl border border-white/50 shadow-[0_10px_40px_rgba(0,0,0,0.1)] rounded-2xl p-1.5 flex gap-1 items-center overflow-x-auto">
+              {["cover", "features", "amenities", "photo", "contact"].map((slide) => (
+                <button
+                  key={slide}
+                  onClick={() => setActiveSlide(slide)}
+                  className={cn(
+                    "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all shrink-0 min-w-[80px] border-2",
+                    activeSlide === slide
+                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/25 scale-105"
+                      : "bg-transparent hover:bg-black/5 text-muted-foreground border-transparent"
+                  )}
+                >
+                  {slide}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

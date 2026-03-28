@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,6 +39,7 @@ import {
   Image as ImageIcon,
   Video,
   Sparkles,
+  Palette,
   ChevronRight,
   ChevronLeft,
   Loader2,
@@ -55,7 +56,6 @@ import {
   Draggable,
   DropResult,
 } from '@hello-pangea/dnd'
-import Handlebars from 'handlebars'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CreativeStudio } from '@/components/creative-studio'
 
@@ -64,8 +64,8 @@ const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b' // TODO: replace with au
 const STEPS = [
   { id: 1, label: 'Detalles', icon: Home },
   { id: 2, label: 'Galería', icon: ImageIcon },
-  { id: 3, label: 'IA y Guion', icon: Video },
-  { id: 4, label: 'Estudio Creativo', icon: Sparkles },
+  { id: 3, label: 'Guion', icon: Video },
+  { id: 4, label: 'Estudio Creativo', icon: Palette },
 ]
 
 interface FormData {
@@ -155,13 +155,128 @@ const initialForm: FormData = {
 
 export default function NewPropertyPage() {
   const router = useRouter()
-  const [step, setStep] = useState(1)
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const urlStep = Number(searchParams.get('step')) || 1
+  const urlId = searchParams.get('id')
+
+  const [step, setStep] = useState(urlStep)
   const [form, setForm] = useState<FormData>(initialForm)
-  const [propertyId, setPropertyId] = useState<string | null>(null)
+  const [propertyId, setPropertyId] = useState<string | null>(urlId)
   const [content, setContent] = useState<PropertyContent | null>(null)
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showHeader, setShowHeader] = useState(true)
+  const lastScrollY = useRef(0)
+
+  // Sync step state with URL (browser back/forward)
+  useEffect(() => {
+    const s = Number(searchParams.get('step')) || 1
+    if (s !== step) {
+      setStep(s)
+    }
+  }, [searchParams])
+
+  // Sync state to URL
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams)
+    let changed = false
+    if (params.get('step') !== String(step)) {
+      params.set('step', String(step))
+      changed = true
+    }
+    if (propertyId && params.get('id') !== propertyId) {
+      params.set('id', propertyId)
+      changed = true
+    }
+    if (changed) {
+      // Use push for step changes to support browser history, 
+      // but replace if we're just adding the ID for the first time
+      const method = params.get('step') !== searchParams.get('step') ? 'push' : 'replace'
+      router[method](`${pathname}?${params.toString()}`, { scroll: false })
+    }
+  }, [step, propertyId, pathname, router])
+
+  // Restore state from API if ID is in URL
+  useEffect(() => {
+    if (urlId && !propertyId) {
+      setPropertyId(urlId)
+    }
+
+    const loadPropertyData = async (id: string) => {
+      setLoading(true)
+      try {
+        const [property, images, propertyContent] = await Promise.all([
+          propertiesApi.get(id),
+          propertiesApi.getImages(id),
+          contentApi.get(id).catch(() => null)
+        ])
+
+        setForm(f => ({
+          ...f,
+          operationType: property.operationType,
+          propertyType: property.propertyType,
+          neighborhood: property.neighborhood,
+          city: property.city,
+          address: property.address || '',
+          priceAmount: String(property.priceAmount),
+          currency: property.currency,
+          bedrooms: String(property.bedrooms || ''),
+          bathrooms: String(property.bathrooms || ''),
+          parkingSpaces: String(property.parkingSpaces || ''),
+          totalArea: String(property.totalArea || ''),
+          builtArea: String(property.builtArea || ''),
+          unbuiltArea: String(property.unbuiltArea || ''),
+          levels: String(property.levels || ''),
+          amenities: property.amenities,
+          description: property.description || '',
+          uploadedImages: images,
+          title: propertyContent?.title || '',
+          hook: propertyContent?.hook || '',
+          body: propertyContent?.body || '',
+          caption: propertyContent?.caption || '',
+          editedScenes: propertyContent?.videoScript?.scenes.map((s: any, i: number) => ({
+            text: s.text,
+            suggestedDuration: s.suggestedDuration,
+            imageId: images[i % images.length]?.id || null,
+          })) || []
+        }))
+
+        if (propertyContent) {
+          setContent(propertyContent)
+        }
+      } catch (e) {
+        console.error('Error loading property data', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (urlId && propertyId === urlId && form.uploadedImages.length === 0 && !loading) {
+      loadPropertyData(urlId)
+    }
+  }, [urlId, propertyId])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      // Show header if scrolling up OR close to top
+      if (currentScrollY <= 80) {
+        setShowHeader(true)
+      } else if (currentScrollY < lastScrollY.current) {
+        // Scrolling up
+        setShowHeader(true)
+      } else if (currentScrollY > lastScrollY.current && currentScrollY > 150) {
+        // Scrolling down and past threshold
+        setShowHeader(false)
+      }
+      lastScrollY.current = Math.max(0, currentScrollY)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -196,11 +311,10 @@ export default function NewPropertyPage() {
     setForm((f) => ({ ...f, ...updates })), [])
 
   const handleCreateProperty = async () => {
-    if (propertyId) return // already created
     setLoading(true)
     setError(null)
     try {
-      const property = await propertiesApi.create({
+      const data = {
         agentId: AGENT_ID,
         operationType: form.operationType as Property['operationType'],
         propertyType: form.propertyType as Property['propertyType'],
@@ -221,8 +335,14 @@ export default function NewPropertyPage() {
         levels: form.levels ? Number(form.levels) : undefined,
         amenities: form.amenities,
         description: form.description,
-      })
-      setPropertyId(property.id)
+      }
+
+      if (propertyId) {
+        await propertiesApi.update(propertyId, data)
+      } else {
+        const property = await propertiesApi.create(data)
+        setPropertyId(property.id)
+      }
     } catch (e) {
       setError(String(e))
       throw e
@@ -351,45 +471,50 @@ export default function NewPropertyPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b bg-card px-4 sm:px-6 py-4 sticky top-0 z-20">
-        <div className="mx-auto max-w-5xl flex items-center justify-between">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold">Nueva Propiedad</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Paso {step} de {STEPS.length}: {STEPS[step - 1].label}
-            </p>
+      <div
+        className={cn(
+          'sticky top-0 z-30 bg-card/95 backdrop-blur-md supports-backdrop-filter:bg-card/80 border-b transition-all duration-300 ease-in-out transform',
+          showHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none',
+        )}
+      >
+        <div className="mx-auto max-w-5xl">
+          <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">Nueva Propiedad</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Paso {step} de {STEPS.length}: {STEPS[step - 1].label}
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="h-8 sm:h-9">
+              <X className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Cancelar</span>
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-            <X className="h-4 w-4 mr-1" />{' '}
-            <span className="hidden sm:inline">Cancelar</span>
-          </Button>
-        </div>
-      </div>
 
-      <div className="border-b bg-card pb-4 sticky top-[65px] sm:top-[73px] z-10">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-2">
-          <Progress value={progressPct} className="h-1.5 mb-3" />
-        </div>
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="flex gap-2 overflow-x-auto py-1 no-scrollbar">
-            {STEPS.map((s) => {
-              const Icon = s.icon
-              return (
-                <div
-                  key={s.id}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0',
-                    step === s.id
-                      ? 'bg-primary text-primary-foreground'
-                      : step > s.id
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-muted text-muted-foreground',
-                  )}
-                >
-                  <Icon className="h-3 w-3" /> {s.label}
-                </div>
-              )
-            })}
+          <div className="px-4 sm:px-6 mb-4">
+            <Progress value={progressPct} className="h-1.5" />
+          </div>
+
+          <div className="px-4 sm:px-6 pb-4">
+            <div className="flex gap-2 overflow-x-auto py-1 no-scrollbar">
+              {STEPS.map((s) => {
+                const Icon = s.icon
+                return (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0',
+                      step === s.id
+                        ? 'bg-primary text-primary-foreground'
+                        : step > s.id
+                          ? 'bg-primary/20 text-primary'
+                          : 'bg-muted text-muted-foreground',
+                    )}
+                  >
+                    <Icon className="h-3 w-3" /> {s.label}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -397,7 +522,7 @@ export default function NewPropertyPage() {
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
         {error && (
           <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm flex items-start gap-2">
-            <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />{' '}
+            <Info className="h-4 w-4 mt-0.5 shrink-0" />{' '}
             <span>{error}</span>
           </div>
         )}
@@ -454,7 +579,7 @@ export default function NewPropertyPage() {
                 </>
               ) : step === 3 && !content ? (
                 <>
-                  <Sparkles className="h-4 w-4 mr-2" /> Generar Contenido IA
+                  <Sparkles className="h-4 w-4 mr-2" /> Generar Contenido
                 </>
               ) : (
                 <>
@@ -788,7 +913,7 @@ function Step1({
   )
 }
 
-// --- STEP 2: Galería de Medios ---
+// --- STEP 2: Galería de Imagenes ---
 function Step2({
   propertyId,
   form,
@@ -815,12 +940,22 @@ function Step2({
     }
   }
 
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = async (result: DropResult) => {
     if (!result.destination || !propertyId) return
     const items = Array.from(form.uploadedImages)
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
     update('uploadedImages', items)
+
+    // Persist reorder to backend
+    try {
+      await propertiesApi.reorderImages(
+        propertyId,
+        items.map((img, idx) => ({ id: img.id, order: idx })),
+      )
+    } catch (e) {
+      console.error('Error reordering images', e)
+    }
   }
 
   const removeImage = async (imageId: string) => {
@@ -840,7 +975,7 @@ function Step2({
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center max-w-2xl mx-auto space-y-2">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-pretty">
-          Galería de Medios
+          Galería de imágenes
         </h2>
         <p className="text-muted-foreground">
           Sube tus fotos y ordénalas arrastrando. La primera será la{' '}
@@ -1013,20 +1148,13 @@ function Step3({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            Propuesta de la IA
+            Configuracion de escenas
           </h2>
           <p className="text-sm text-muted-foreground">
             Revisa los textos del video. Para editar todo el contenido, ve al
             Estudio Creativo.
           </p>
         </div>
-      </div>
-
-      <div className="bg-primary/10 rounded-2xl p-6 border-2 border-primary/20 shadow-inner">
-        <div className="text-[10px] uppercase tracking-widest text-primary font-black mb-2 flex items-center gap-2">
-          <Sparkles className="h-3 w-3" /> Título Publicitario Generado
-        </div>
-        <div className="text-xl font-bold leading-tight">{content.title}</div>
       </div>
 
       <div className="grid gap-4">
@@ -1039,7 +1167,7 @@ function Step3({
               key={idx}
               className="border-l-8 border-l-primary/30 hover:border-l-primary transition-all overflow-hidden"
             >
-              <CardContent className="p-5 flex flex-col sm:flex-row gap-6">
+              <CardContent className="px-5 py-3 flex flex-col sm:flex-row gap-6">
                 <div className="flex-1 space-y-3 text-left">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
                     Escena {idx + 1} — {scene.suggestedDuration}s
@@ -1055,7 +1183,7 @@ function Step3({
                     className="text-sm resize-none focus-visible:ring-primary border-none bg-muted/30 p-3 rounded-lg"
                   />
                 </div>
-                <div className="flex-shrink-0 flex items-center">
+                <div className="shrink-0 flex items-center">
                   <div
                     onClick={() => {
                       setActiveSceneIdx(idx)
@@ -1196,8 +1324,8 @@ function Step4({ form, updateMultiple, templates, content, isGenerating }: any) 
         <h2 className="text-3xl font-bold tracking-tight uppercase">Estudio Creativo</h2>
         <p className="text-muted-foreground mt-2">Personaliza cada producto de marketing de manera independiente.</p>
       </div>
-      
-      <CreativeStudio 
+
+      <CreativeStudio
         propertyId="new"
         initialData={initialData}
         content={content}

@@ -61,6 +61,7 @@ import {
   X,
   GripVertical,
   Sparkles,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -88,6 +89,8 @@ export default function PropertyDetailsPage() {
 
   // Layout State
   const [mainTab, setMainTab] = useState("resultados");
+  const [showHeader, setShowHeader] = useState(true);
+  const lastScrollY = useRef(0);
 
   // Studio State
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -174,6 +177,26 @@ export default function PropertyDetailsPage() {
       }));
     }
   }
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      // Show header if scrolling up OR close to top
+      if (currentScrollY <= 80) {
+        setShowHeader(true);
+      } else if (currentScrollY < lastScrollY.current) {
+        // Scrolling up
+        setShowHeader(true);
+      } else if (currentScrollY > lastScrollY.current && currentScrollY > 150) {
+        // Scrolling down and past threshold
+        setShowHeader(false);
+      }
+      lastScrollY.current = Math.max(0, currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Live preview logic for Studio
   useEffect(() => {
@@ -310,7 +333,7 @@ export default function PropertyDetailsPage() {
         templateId: studioData.selectedPdfTemplateId || undefined,
         colors: { primary: studioData.primaryColor, secondary: studioData.secondaryColor },
       };
-      
+
       const socialConfig = {
         templateId: studioData.selectedSocialTemplateId || undefined,
         images: studioData.uploadedImages.map((img: any, idx: number) => ({
@@ -372,14 +395,19 @@ export default function PropertyDetailsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card px-4 sm:px-6 py-4 sticky top-0 z-20">
+      <div
+        className={cn(
+          "border-b bg-card/95 backdrop-blur-md supports-backdrop-filter:bg-card/80 px-4 sm:px-6 py-4 sticky top-0 z-30 transition-all duration-300 ease-in-out transform",
+          showHeader ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
+        )}
+      >
         <div className="mx-auto max-w-6xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push("/")}
-              className="flex-shrink-0"
+              className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -395,7 +423,7 @@ export default function PropertyDetailsPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {allProcessing && (
               <Badge variant="outline" className="gap-1.5 text-[10px] sm:text-xs">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -414,19 +442,19 @@ export default function PropertyDetailsPage() {
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
         <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="resultados" className="text-xs sm:text-sm">
               Resultados Finales
             </TabsTrigger>
             <TabsTrigger value="estudio" className="text-xs sm:text-sm gap-2">
-              <Sparkles className="h-4 w-4" /> Estudio Creativo
+              <Palette className="h-4 w-4" /> Estudio Creativo
             </TabsTrigger>
           </TabsList>
 
           {/* ===================== RESULTADOS FINALES ===================== */}
           <TabsContent value="resultados" className="mt-0">
             <Tabs defaultValue="brief">
-              <TabsList className="grid grid-cols-3 w-full max-w-md mb-6">
+              <TabsList className="flex w-full mb-6">
                 <TabsTrigger value="brief" className="gap-1 sm:gap-2 text-xs sm:text-sm">
                   <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="truncate">Brief</span>
@@ -445,12 +473,12 @@ export default function PropertyDetailsPage() {
               </TabsList>
 
               <TabsContent value="brief">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  <div className="lg:col-span-3">
+                <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+                  <div className="lg:col-span-4">
                     {brief?.status === "processing" || progress.brief === "processing" ? (
                       <LoadingCard label="Generando PDF..." />
                     ) : brief?.status === "completed" && brief.pdfUrl ? (
-                      <div className="border rounded-xl overflow-hidden bg-muted/30 aspect-[0.7] w-full">
+                      <div className="border rosunded-xl overflow-hidden bg-muted/30 aspect-[0.7] w-full">
                         <iframe
                           src={brief.pdfUrl}
                           className="w-full h-full overflow-hidden border-none"
@@ -464,7 +492,7 @@ export default function PropertyDetailsPage() {
                       <PendingCard label="PDF en espera..." />
                     )}
                   </div>
-                  <div className="lg:col-span-1 space-y-4">
+                  <div className="lg:col-span-2 space-y-4">
                     <Card>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-sm">Acciones PDF</CardTitle>
@@ -478,19 +506,10 @@ export default function PropertyDetailsPage() {
                           </Button>
                         )}
                         <Button variant="outline" className="w-full gap-2" onClick={() => openStudio("brief")}>
-                          <Sparkles className="h-4 w-4" /> Editar y Regenerar
+                          <Palette className="h-4 w-4" /> Editar y Regenerar
                         </Button>
                       </CardContent>
                     </Card>
-                    <div className="space-y-1.5 p-4 border rounded-xl bg-card">
-                      <Label className="text-sm font-semibold">Enlace Público</Label>
-                      <div className="flex gap-2">
-                        <Input readOnly value={brief?.pdfUrl || ""} className="h-8 text-xs bg-muted" />
-                        <Button size="icon" variant="secondary" className="h-8 w-8 shrink-0" onClick={() => brief?.pdfUrl && copyToClipboard(brief.pdfUrl, "link")}>
-                          {copiedField === "link" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </TabsContent>
@@ -524,7 +543,7 @@ export default function PropertyDetailsPage() {
                         })()}
                       </TabsContent>
                       <TabsContent value="single">
-                         {(() => {
+                        {(() => {
                           const single = socialPosts.find((p) => p.type === "single");
                           if (progress.social === "processing" || single?.status === "processing") return <LoadingCard label="Generando post..." />;
                           if (single?.generatedImages?.length) return (
@@ -538,7 +557,7 @@ export default function PropertyDetailsPage() {
                           const story = socialPosts.find((p) => p.type === "story");
                           if (progress.social === "processing" || story?.status === "processing") return <LoadingCard label="Generando story..." />;
                           if (story?.generatedImages?.length) return (
-                            <div className="flex justify-center"><div className="relative w-48 sm:w-56 aspect-[9/16] rounded-xl overflow-hidden border"><img src={story.generatedImages[0].url} className="absolute inset-0 w-full h-full object-cover" /></div></div>
+                            <div className="flex justify-center"><div className="relative w-48 sm:w-56 aspect-9/16 rounded-xl overflow-hidden border"><img src={story.generatedImages[0].url} className="absolute inset-0 w-full h-full object-cover" /></div></div>
                           );
                           return <PendingCard label="Story en espera..." />;
                         })()}
@@ -551,10 +570,10 @@ export default function PropertyDetailsPage() {
                         <CardTitle className="text-sm">Publicar</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                         <Button className="w-full gap-2">
-                           <Download className="h-4 w-4" /> Descargar Todo
-                         </Button>
-                         <div className="grid grid-cols-2 gap-2">
+                        <Button className="w-full gap-2">
+                          <Download className="h-4 w-4" /> Descargar Todo
+                        </Button>
+                        <div className="grid grid-cols-2 gap-2">
                           <Button variant="outline" className="gap-2 text-xs" size="sm">
                             <ExternalLink className="h-3 w-3" /> IG
                           </Button>
@@ -572,10 +591,10 @@ export default function PropertyDetailsPage() {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-6">{content?.caption}</p>
-                      
+
                       <div className="pt-2">
                         <Button variant="link" className="w-full text-xs text-primary" onClick={() => openStudio("social")}>
-                           <Sparkles className="h-3 w-3 mr-1" /> Modificar en el Estudio
+                          <Sparkles className="h-3 w-3 mr-1" /> Modificar en el Estudio
                         </Button>
                       </div>
                     </div>
@@ -584,8 +603,8 @@ export default function PropertyDetailsPage() {
               </TabsContent>
 
               <TabsContent value="video">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  <div className="lg:col-span-3">
+                <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+                  <div className="lg:col-span-4">
                     {(progress.video === "processing" || video?.status === "processing") && (
                       <div className="space-y-3">
                         <LoadingCard label="Renderizando video..." />
@@ -593,14 +612,14 @@ export default function PropertyDetailsPage() {
                       </div>
                     )}
                     {video?.status === "completed" && video.videoUrl && (
-                      <div className="rounded-xl overflow-hidden bg-black aspect-[9/16] max-h-[600px] w-full max-w-sm mx-auto shadow-xl">
+                      <div className="rounded-xl overflow-hidden bg-black aspect-9/16 max-h-[600px] w-full max-w-sm mx-auto shadow-xl">
                         <video src={video.videoUrl} controls className="w-full h-full" />
                       </div>
                     )}
                     {!video && progress.video === "idle" && <PendingCard label="Video en espera..." />}
                   </div>
-                  <div className="lg:col-span-1 space-y-4">
-                     <Card>
+                  <div className="lg:col-span-2 space-y-4">
+                    <Card>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-sm">Acciones Video</CardTitle>
                       </CardHeader>
@@ -613,7 +632,7 @@ export default function PropertyDetailsPage() {
                           </Button>
                         )}
                         <Button variant="outline" className="w-full gap-2" onClick={() => openStudio("video")}>
-                          <Sparkles className="h-4 w-4" /> Editar y Regenerar
+                          <Palette className="h-4 w-4" /> Editar y Regenerar
                         </Button>
                       </CardContent>
                     </Card>
@@ -631,7 +650,7 @@ export default function PropertyDetailsPage() {
 
           {/* ===================== ESTUDIO CREATIVO ===================== */}
           <TabsContent value="estudio" className="mt-0 space-y-6">
-            <CreativeStudio 
+            <CreativeStudio
               propertyId={id as string}
               initialData={{
                 ...studioForm,
