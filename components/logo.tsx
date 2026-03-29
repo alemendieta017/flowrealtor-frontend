@@ -1,8 +1,8 @@
-import Image from 'next/image'
+import Image from 'next/image';
 
 interface LogoProps {
-  className?: string
-  size?: 'sm' | 'md' | 'lg'
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export function Logo({ className = '', size = 'md' }: LogoProps) {
@@ -10,7 +10,7 @@ export function Logo({ className = '', size = 'md' }: LogoProps) {
     sm: { width: 100, height: 32 },
     md: { width: 140, height: 45 },
     lg: { width: 180, height: 58 },
-  }
+  };
 
   return (
     <div className={`flex items-center justify-center gap-2 ${className}`}>
@@ -23,5 +23,5 @@ export function Logo({ className = '', size = 'md' }: LogoProps) {
         unoptimized
       />
     </div>
-  )
+  );
 }

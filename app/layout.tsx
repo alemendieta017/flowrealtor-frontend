@@ -1,23 +1,22 @@
-import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Inter, Space_Grotesk } from 'next/font/google';
+import './globals.css';
 
 const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+  subsets: ['latin'],
+  variable: '--font-inter',
 });
 
 const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
 });
 
 export const metadata: Metadata = {
-  title: "flowRealtor — Marketing Inmobiliario con IA",
-  description:
-    "Generá automáticamente PDF, publicaciones y video para tus propiedades",
+  title: 'flowRealtor — Marketing Inmobiliario con IA',
+  description: 'Generá automáticamente PDF, publicaciones y video para tus propiedades',
   icons: {
-    icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
+    icon: [{ url: '/logo.svg', type: 'image/svg+xml' }],
   },
 };
 
@@ -28,9 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body
-        className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}
-      >
+      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

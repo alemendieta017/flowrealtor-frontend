@@ -1,31 +1,25 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import {
-  Download,
-  Instagram,
-  Facebook,
-  Smartphone,
-  Monitor,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from 'react';
+import { Download, Instagram, Facebook, Smartphone, Monitor } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Logo } from "@/components/logo";
+} from '@/components/ui/select';
+import { Logo } from '@/components/logo';
 
 interface SocialMediaPreviewProps {
   images: string[];
   title: string;
   price: string;
   location: string;
-  operationType: "venta" | "alquiler";
+  operationType: 'venta' | 'alquiler';
   features?: {
     bedrooms?: number;
     bathrooms?: number;
@@ -34,10 +28,10 @@ interface SocialMediaPreviewProps {
 }
 
 const templates = [
-  { id: "modern", name: "Moderno", accent: "from-amber-400 to-orange-500" },
-  { id: "elegant", name: "Elegante", accent: "from-slate-700 to-slate-900" },
-  { id: "vibrant", name: "Vibrante", accent: "from-rose-400 to-purple-500" },
-  { id: "minimal", name: "Minimalista", accent: "from-gray-100 to-gray-200" },
+  { id: 'modern', name: 'Moderno', accent: 'from-amber-400 to-orange-500' },
+  { id: 'elegant', name: 'Elegante', accent: 'from-slate-700 to-slate-900' },
+  { id: 'vibrant', name: 'Vibrante', accent: 'from-rose-400 to-purple-500' },
+  { id: 'minimal', name: 'Minimalista', accent: 'from-gray-100 to-gray-200' },
 ];
 
 export function SocialMediaPreview({
@@ -48,28 +42,22 @@ export function SocialMediaPreview({
   operationType,
   features,
 }: SocialMediaPreviewProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState("modern");
-  const [format, setFormat] = useState<"post" | "story">("post");
+  const [selectedTemplate, setSelectedTemplate] = useState('modern');
+  const [format, setFormat] = useState<'post' | 'story'>('post');
 
-  const currentTemplate =
-    templates.find((t) => t.id === selectedTemplate) || templates[0];
+  const currentTemplate = templates.find((t) => t.id === selectedTemplate) || templates[0];
   const mainImage =
     images[0] ||
-    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=800&fit=crop";
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=800&fit=crop';
 
   return (
     <Card className="bg-card border-border">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-foreground">
-            Previsualizacion de Posts
-          </CardTitle>
+          <CardTitle className="text-foreground">Previsualizacion de Posts</CardTitle>
           <div className="flex items-center gap-3">
-            <Select
-              value={selectedTemplate}
-              onValueChange={setSelectedTemplate}
-            >
-              <SelectTrigger className="w-36 bg-secondary border-border">
+            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+              <SelectTrigger className="bg-secondary border-border w-36">
                 <SelectValue placeholder="Plantilla" />
               </SelectTrigger>
               <SelectContent>
@@ -84,21 +72,18 @@ export function SocialMediaPreview({
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs
-          value={format}
-          onValueChange={(v) => setFormat(v as "post" | "story")}
-        >
-          <TabsList className="grid w-full grid-cols-2 bg-secondary mb-6">
+        <Tabs value={format} onValueChange={(v) => setFormat(v as 'post' | 'story')}>
+          <TabsList className="bg-secondary mb-6 grid w-full grid-cols-2">
             <TabsTrigger
               value="post"
-              className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2"
             >
               <Monitor className="h-4 w-4" />
               Post (1:1)
             </TabsTrigger>
             <TabsTrigger
               value="story"
-              className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2"
             >
               <Smartphone className="h-4 w-4" />
               Story (9:16)
@@ -106,7 +91,7 @@ export function SocialMediaPreview({
           </TabsList>
 
           <TabsContent value="post">
-            <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex flex-col gap-6 lg:flex-row">
               <div className="flex-1">
                 <PostPreview
                   image={mainImage}
@@ -118,26 +103,24 @@ export function SocialMediaPreview({
                   template={currentTemplate}
                 />
               </div>
-              <div className="lg:w-64 space-y-4">
-                <h4 className="font-medium text-foreground">
-                  Imagenes disponibles
-                </h4>
-                <div className="grid grid-cols-3 lg:grid-cols-2 gap-2">
+              <div className="space-y-4 lg:w-64">
+                <h4 className="text-foreground font-medium">Imagenes disponibles</h4>
+                <div className="grid grid-cols-3 gap-2 lg:grid-cols-2">
                   {images.slice(0, 6).map((img, index) => (
                     <div
                       key={index}
-                      className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-primary cursor-pointer transition-colors"
+                      className="hover:border-primary relative aspect-square cursor-pointer overflow-hidden rounded-lg border-2 border-transparent transition-colors"
                     >
                       <img
                         src={img}
                         alt={`Imagen ${index + 1}`}
-                        className="absolute inset-0 w-full h-full object-cover scale-101"
+                        className="absolute inset-0 h-full w-full scale-101 object-cover"
                       />
                     </div>
                   ))}
                 </div>
-                <div className="pt-4 space-y-2">
-                  <Button className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                <div className="space-y-2 pt-4">
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full gap-2">
                     <Download className="h-4 w-4" />
                     Descargar Post
                   </Button>
@@ -151,8 +134,8 @@ export function SocialMediaPreview({
           </TabsContent>
 
           <TabsContent value="story">
-            <div className="flex flex-col lg:flex-row gap-6">
-              <div className="flex-1 flex justify-center">
+            <div className="flex flex-col gap-6 lg:flex-row">
+              <div className="flex flex-1 justify-center">
                 <StoryPreview
                   image={mainImage}
                   title={title}
@@ -163,26 +146,24 @@ export function SocialMediaPreview({
                   template={currentTemplate}
                 />
               </div>
-              <div className="lg:w-64 space-y-4">
-                <h4 className="font-medium text-foreground">
-                  Imagenes disponibles
-                </h4>
-                <div className="grid grid-cols-3 lg:grid-cols-2 gap-2">
+              <div className="space-y-4 lg:w-64">
+                <h4 className="text-foreground font-medium">Imagenes disponibles</h4>
+                <div className="grid grid-cols-3 gap-2 lg:grid-cols-2">
                   {images.slice(0, 6).map((img, index) => (
                     <div
                       key={index}
-                      className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-primary cursor-pointer transition-colors"
+                      className="hover:border-primary relative aspect-square cursor-pointer overflow-hidden rounded-lg border-2 border-transparent transition-colors"
                     >
                       <img
                         src={img}
                         alt={`Imagen ${index + 1}`}
-                        className="absolute inset-0 w-full h-full object-cover scale-101"
+                        className="absolute inset-0 h-full w-full scale-101 object-cover"
                       />
                     </div>
                   ))}
                 </div>
-                <div className="pt-4 space-y-2">
-                  <Button className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                <div className="space-y-2 pt-4">
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full gap-2">
                     <Download className="h-4 w-4" />
                     Descargar Story
                   </Button>
@@ -205,7 +186,7 @@ interface PreviewProps {
   title: string;
   price: string;
   location: string;
-  operationType: "venta" | "alquiler";
+  operationType: 'venta' | 'alquiler';
   features?: {
     bedrooms?: number;
     bathrooms?: number;
@@ -223,31 +204,29 @@ function PostPreview({
   features,
   template,
 }: PreviewProps) {
-  const isLight = template.id === "minimal";
+  const isLight = template.id === 'minimal';
 
   return (
-    <div className="relative aspect-square max-w-md mx-auto rounded-lg overflow-hidden shadow-2xl">
+    <div className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-lg shadow-2xl">
       <img
         src={image}
         alt={title}
-        className="absolute inset-0 w-full h-full object-cover scale-101"
+        className="absolute inset-0 h-full w-full scale-101 object-cover"
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
 
       <div
-        className={`absolute top-4 left-4 px-3 py-1.5 rounded-full bg-linear-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} text-sm font-bold uppercase tracking-wider`}
+        className={`absolute top-4 left-4 rounded-full bg-linear-to-r px-3 py-1.5 ${template.accent} ${isLight ? 'text-gray-900' : 'text-white'} text-sm font-bold tracking-wider uppercase`}
       >
-        {operationType === "venta" ? "En Venta" : "En Alquiler"}
+        {operationType === 'venta' ? 'En Venta' : 'En Alquiler'}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-6">
-        <h3 className="text-white text-xl font-bold mb-2 line-clamp-2">
-          {title}
-        </h3>
-        <p className="text-white/80 text-sm mb-3">{location}</p>
+      <div className="absolute right-0 bottom-0 left-0 p-6">
+        <h3 className="mb-2 line-clamp-2 text-xl font-bold text-white">{title}</h3>
+        <p className="mb-3 text-sm text-white/80">{location}</p>
 
         {features && (
-          <div className="flex gap-4 mb-4 text-white/90 text-sm">
+          <div className="mb-4 flex gap-4 text-sm text-white/90">
             {features.bedrooms && <span>{features.bedrooms} Dorm.</span>}
             {features.bathrooms && <span>{features.bathrooms} Banos</span>}
             {features.area && <span>{features.area}m²</span>}
@@ -255,13 +234,13 @@ function PostPreview({
         )}
 
         <div
-          className={`inline-block px-4 py-2 rounded-lg bg-linear-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} font-bold text-lg`}
+          className={`inline-block rounded-lg bg-linear-to-r px-4 py-2 ${template.accent} ${isLight ? 'text-gray-900' : 'text-white'} text-lg font-bold`}
         >
           {price}
         </div>
       </div>
 
-      <div className="absolute bottom-4 right-4">
+      <div className="absolute right-4 bottom-4">
         <Logo size="sm" className="opacity-80" />
       </div>
     </div>
@@ -277,57 +256,51 @@ function StoryPreview({
   features,
   template,
 }: PreviewProps) {
-  const isLight = template.id === "minimal";
+  const isLight = template.id === 'minimal';
 
   return (
-    <div className="relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl">
+    <div className="relative aspect-[9/16] w-64 overflow-hidden rounded-2xl shadow-2xl">
       <img
         src={image}
         alt={title}
-        className="absolute inset-0 w-full h-full object-cover scale-101"
+        className="absolute inset-0 h-full w-full scale-101 object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/20" />
 
       <div
-        className={`absolute top-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-gradient-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} text-sm font-bold uppercase tracking-wider`}
+        className={`absolute top-6 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r px-4 py-2 ${template.accent} ${isLight ? 'text-gray-900' : 'text-white'} text-sm font-bold tracking-wider uppercase`}
       >
-        {operationType === "venta" ? "En Venta" : "En Alquiler"}
+        {operationType === 'venta' ? 'En Venta' : 'En Alquiler'}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
-        <h3 className="text-white text-lg font-bold mb-2">{title}</h3>
-        <p className="text-white/80 text-sm mb-4">{location}</p>
+      <div className="absolute right-0 bottom-0 left-0 p-6 text-center">
+        <h3 className="mb-2 text-lg font-bold text-white">{title}</h3>
+        <p className="mb-4 text-sm text-white/80">{location}</p>
 
         {features && (
-          <div className="flex justify-center gap-3 mb-4 text-white/90 text-xs">
+          <div className="mb-4 flex justify-center gap-3 text-xs text-white/90">
             {features.bedrooms && (
-              <span className="bg-white/20 px-2 py-1 rounded">
-                {features.bedrooms} Dorm.
-              </span>
+              <span className="rounded bg-white/20 px-2 py-1">{features.bedrooms} Dorm.</span>
             )}
             {features.bathrooms && (
-              <span className="bg-white/20 px-2 py-1 rounded">
-                {features.bathrooms} Banos
-              </span>
+              <span className="rounded bg-white/20 px-2 py-1">{features.bathrooms} Banos</span>
             )}
             {features.area && (
-              <span className="bg-white/20 px-2 py-1 rounded">
-                {features.area}m²
-              </span>
+              <span className="rounded bg-white/20 px-2 py-1">{features.area}m²</span>
             )}
           </div>
         )}
 
         <div
-          className={`inline-block px-6 py-3 rounded-xl bg-linear-to-r ${template.accent} ${isLight ? "text-gray-900" : "text-white"} font-bold text-xl`}
+          className={`inline-block rounded-xl bg-linear-to-r px-6 py-3 ${template.accent} ${isLight ? 'text-gray-900' : 'text-white'} text-xl font-bold`}
         >
           {price}
         </div>
 
         <div className="mt-4 flex items-center justify-center gap-2">
-          <span className="text-white/60 text-xs">Desliza para mas</span>
+          <span className="text-xs text-white/60">Desliza para mas</span>
           <svg
-            className="w-4 h-4 text-white/60 animate-bounce"
+            className="h-4 w-4 animate-bounce text-white/60"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

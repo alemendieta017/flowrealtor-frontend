@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Copy, Check, RefreshCw, Download, Share2, Edit } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from 'react';
+import { Copy, Check, RefreshCw, Download, Share2, Edit } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 interface GeneratedContent {
   title: string;
@@ -24,12 +24,7 @@ interface ContentPreviewProps {
   onEdit?: (content: GeneratedContent) => void;
 }
 
-export function ContentPreview({
-  content,
-  isLoading,
-  onRegenerate,
-  onEdit,
-}: ContentPreviewProps) {
+export function ContentPreview({ content, isLoading, onRegenerate, onEdit }: ContentPreviewProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<GeneratedContent>(content);
@@ -57,16 +52,14 @@ export function ContentPreview({
             disabled={isLoading}
             className="gap-2"
           >
-            <RefreshCw
-              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-            />
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Regenerar
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="copy" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-secondary">
+          <TabsList className="bg-secondary grid w-full grid-cols-3">
             <TabsTrigger
               value="copy"
               className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -87,12 +80,12 @@ export function ContentPreview({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="copy" className="space-y-4 mt-4">
+          <TabsContent value="copy" className="mt-4 space-y-4">
             <ContentBlock
               label="Titulo Gancho"
               content={content.title}
               copiedField={copiedField}
-              onCopy={() => copyToClipboard(content.title, "title")}
+              onCopy={() => copyToClipboard(content.title, 'title')}
               fieldKey="title"
               editMode={editMode}
               setEditMode={setEditMode}
@@ -105,7 +98,7 @@ export function ContentPreview({
               label="Frase Hook"
               content={content.hook}
               copiedField={copiedField}
-              onCopy={() => copyToClipboard(content.hook, "hook")}
+              onCopy={() => copyToClipboard(content.hook, 'hook')}
               fieldKey="hook"
               editMode={editMode}
               setEditMode={setEditMode}
@@ -118,7 +111,7 @@ export function ContentPreview({
               label="Descripcion Completa"
               content={content.body}
               copiedField={copiedField}
-              onCopy={() => copyToClipboard(content.body, "body")}
+              onCopy={() => copyToClipboard(content.body, 'body')}
               fieldKey="body"
               editMode={editMode}
               setEditMode={setEditMode}
@@ -129,12 +122,12 @@ export function ContentPreview({
             />
           </TabsContent>
 
-          <TabsContent value="social" className="space-y-4 mt-4">
+          <TabsContent value="social" className="mt-4 space-y-4">
             <ContentBlock
               label="Caption para Redes"
               content={content.caption}
               copiedField={copiedField}
-              onCopy={() => copyToClipboard(content.caption, "caption")}
+              onCopy={() => copyToClipboard(content.caption, 'caption')}
               fieldKey="caption"
               editMode={editMode}
               setEditMode={setEditMode}
@@ -144,20 +137,16 @@ export function ContentPreview({
               multiline
             />
 
-            <div className="rounded-lg bg-secondary/50 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-foreground">
-                  Hashtags
-                </span>
+            <div className="bg-secondary/50 rounded-lg p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-foreground text-sm font-medium">Hashtags</span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() =>
-                    copyToClipboard(content.hashtags.join(" "), "hashtags")
-                  }
+                  onClick={() => copyToClipboard(content.hashtags.join(' '), 'hashtags')}
                   className="gap-2"
                 >
-                  {copiedField === "hashtags" ? (
+                  {copiedField === 'hashtags' ? (
                     <Check className="h-4 w-4 text-green-500" />
                   ) : (
                     <Copy className="h-4 w-4" />
@@ -170,10 +159,10 @@ export function ContentPreview({
                   <Badge
                     key={index}
                     variant="outline"
-                    className="cursor-pointer border-primary/50 text-primary hover:bg-primary/10"
+                    className="border-primary/50 text-primary hover:bg-primary/10 cursor-pointer"
                     onClick={() => copyToClipboard(tag, `hashtag-${index}`)}
                   >
-                    {tag.startsWith("#") ? tag : `#${tag}`}
+                    {tag.startsWith('#') ? tag : `#${tag}`}
                   </Badge>
                 ))}
               </div>
@@ -191,12 +180,12 @@ export function ContentPreview({
             </div>
           </TabsContent>
 
-          <TabsContent value="video" className="space-y-4 mt-4">
+          <TabsContent value="video" className="mt-4 space-y-4">
             <ContentBlock
               label="Guion para Video"
               content={content.videoScript}
               copiedField={copiedField}
-              onCopy={() => copyToClipboard(content.videoScript, "videoScript")}
+              onCopy={() => copyToClipboard(content.videoScript, 'videoScript')}
               fieldKey="videoScript"
               editMode={editMode}
               setEditMode={setEditMode}
@@ -206,15 +195,13 @@ export function ContentPreview({
               multiline
             />
 
-            <div className="rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 p-4">
-              <h4 className="font-medium text-foreground mb-2">
-                Generar Video con Voz en Off
-              </h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                El video se generara automaticamente usando las fotos de la
-                propiedad y el guion de arriba con voz sintetizada.
+            <div className="from-primary/10 to-accent/10 border-primary/20 rounded-lg border bg-gradient-to-br p-4">
+              <h4 className="text-foreground mb-2 font-medium">Generar Video con Voz en Off</h4>
+              <p className="text-muted-foreground mb-4 text-sm">
+                El video se generara automaticamente usando las fotos de la propiedad y el guion de
+                arriba con voz sintetizada.
               </p>
-              <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
                 <Download className="h-4 w-4" />
                 Generar Video
               </Button>
@@ -256,35 +243,22 @@ function ContentBlock({
   const isEditing = editMode === fieldKey;
 
   return (
-    <div className="rounded-lg bg-secondary/50 p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-foreground">{label}</span>
+    <div className="bg-secondary/50 rounded-lg p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-foreground text-sm font-medium">{label}</span>
         <div className="flex gap-1">
           {isEditing ? (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditMode(null)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setEditMode(null)}>
                 Cancelar
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onSave}
-                className="text-green-500"
-              >
+              <Button variant="ghost" size="sm" onClick={onSave} className="text-green-500">
                 Guardar
               </Button>
             </>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setEditMode(fieldKey)}
-              >
+              <Button variant="ghost" size="icon" onClick={() => setEditMode(fieldKey)}>
                 <Edit className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={onCopy}>
@@ -301,15 +275,11 @@ function ContentBlock({
       {isEditing ? (
         <Textarea
           value={editedContent[fieldKey as keyof GeneratedContent] as string}
-          onChange={(e) =>
-            setEditedContent({ ...editedContent, [fieldKey]: e.target.value })
-          }
+          onChange={(e) => setEditedContent({ ...editedContent, [fieldKey]: e.target.value })}
           className="bg-background border-border min-h-24"
         />
       ) : (
-        <p
-          className={`text-sm text-muted-foreground ${multiline ? "whitespace-pre-wrap" : ""}`}
-        >
+        <p className={`text-muted-foreground text-sm ${multiline ? 'whitespace-pre-wrap' : ''}`}>
           {content}
         </p>
       )}

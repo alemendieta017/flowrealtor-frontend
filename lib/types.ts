@@ -28,15 +28,15 @@ export interface PropertyImage {
 export interface Property {
   id: string;
   agentId: string;
-  operationType: "venta" | "alquiler";
-  propertyType: "casa" | "departamento" | "oficina" | "terreno" | "local";
+  operationType: 'venta' | 'alquiler';
+  propertyType: 'casa' | 'departamento' | 'oficina' | 'terreno' | 'local';
   title?: string;
   neighborhood: string;
   city: string;
   country: string;
   address?: string;
   priceAmount: number;
-  currency: "USD" | "PYG";
+  currency: 'USD' | 'PYG';
   bedrooms?: number;
   bathrooms?: number;
   parkingSpaces?: number;
@@ -46,7 +46,7 @@ export interface Property {
   levels?: number;
   amenities: string[];
   description?: string;
-  status: "draft" | "active" | "sold" | "rented";
+  status: 'draft' | 'active' | 'sold' | 'rented';
   images?: PropertyImage[];
   createdAt: string;
   updatedAt: string;
@@ -61,9 +61,9 @@ export interface Template {
   id: string;
   name: string;
   label: string;
-  type: "PDF" | "SOCIAL" | "VIDEO_REEL";
+  type: 'PDF' | 'SOCIAL' | 'VIDEO_REEL';
   thumbnailUrl: string;
-  livePreviewType: "html_iframe" | "static_video";
+  livePreviewType: 'html_iframe' | 'static_video';
   demoVideoUrl?: string;
 }
 
@@ -74,6 +74,12 @@ export interface PropertyContent {
   hook: string;
   body: string;
   caption: string;
+  briefTitle?: string;
+  briefHook?: string;
+  briefDescripcion?: string;
+  socialPostTitle?: string;
+  socialPostCaption?: string;
+  videoTitle?: string;
   hashtags: string[];
   videoScript: { scenes: VideoScene[] };
   emailBody?: string;
@@ -85,13 +91,13 @@ export interface Brief {
   id: string;
   propertyId: string;
   property?: Property;
-  template: "modern" | "elegant" | "corporate";
+  template: 'modern' | 'elegant' | 'corporate';
   colors?: { primary: string; secondary: string };
   coverImageId?: string;
   agentLogoUrl?: string;
   agentPhotoUrl?: string;
   pdfUrl?: string;
-  status: "pending" | "processing" | "completed" | "failed";
+  status: 'pending' | 'processing' | 'completed' | 'failed';
   createdAt: string;
 }
 
@@ -99,13 +105,13 @@ export interface SocialPost {
   id: string;
   propertyId: string;
   property?: Property;
-  platform: "instagram" | "facebook";
-  type: "carousel" | "story" | "single";
-  template: "modern" | "elegant" | "vibrant" | "minimal";
+  platform: 'instagram' | 'facebook';
+  type: 'carousel' | 'story' | 'single';
+  template: 'modern' | 'elegant' | 'vibrant' | 'minimal';
   images: { imageId: string; order: number }[];
   generatedImages?: { url: string; order: number }[];
   caption?: string;
-  status: "draft" | "processing" | "completed" | "published" | "failed";
+  status: 'draft' | 'processing' | 'completed' | 'published' | 'failed';
   createdAt: string;
 }
 
@@ -113,15 +119,15 @@ export interface Video {
   id: string;
   propertyId: string;
   property?: Property;
-  format: "quick" | "narrated";
+  format: 'quick' | 'narrated';
   voiceoverEnabled: boolean;
-  voiceGender: "male" | "female";
-  style: "luxury" | "professional" | "energetic" | "elegant" | "modern";
+  voiceGender: 'male' | 'female';
+  style: 'luxury' | 'professional' | 'energetic' | 'elegant' | 'modern';
   additionalContext?: string;
   sceneOrder: { imageId: string; sceneText: string; duration: number }[];
   videoUrl?: string;
   audioUrl?: string;
-  status: "pending" | "processing" | "completed" | "failed";
+  status: 'pending' | 'processing' | 'completed' | 'failed';
   createdAt: string;
 }
 
@@ -138,58 +144,58 @@ export interface ListingStatus {
 }
 
 export const AMENITIES = [
-  "Piscina",
-  "Quincho / Asador",
-  "Gimnasio",
-  "Seguridad 24hs",
-  "Alarma",
-  "Camaras de seguridad",
-  "Generador",
-  "Cisterna",
-  "Jardín",
-  "Terraza",
-  "Balcon",
-  "Amoblado",
-  "Aire acondicionado",
-  "Calefaccion",
-  "Gas natural",
-  "Ascensor",
-  "Portero electrico",
-  "Cancha de tenis",
-  "Cancha de padel",
-  "Salon de usos multiples",
-  "Lavadero",
-  "Bodega",
-  "Cochera cubierta",
-  "Acceso discapacitados",
+  'Piscina',
+  'Quincho / Asador',
+  'Gimnasio',
+  'Seguridad 24hs',
+  'Alarma',
+  'Camaras de seguridad',
+  'Generador',
+  'Cisterna',
+  'Jardín',
+  'Terraza',
+  'Balcon',
+  'Amoblado',
+  'Aire acondicionado',
+  'Calefaccion',
+  'Gas natural',
+  'Ascensor',
+  'Portero electrico',
+  'Cancha de tenis',
+  'Cancha de padel',
+  'Salon de usos multiples',
+  'Lavadero',
+  'Bodega',
+  'Cochera cubierta',
+  'Acceso discapacitados',
 ] as const;
 
 export const NEIGHBORHOODS_PY = [
-  "Asuncion",
-  "Villa Morra",
-  "Recoleta",
-  "Las Mercedes",
-  "Carmelitas",
-  "Trinidad",
-  "Herrera",
-  "San Lorenzo",
-  "Lambare",
-  "Fernando de la Mora",
-  "Luque",
-  "Capiata",
-  "Aregua",
-  "Itaugua",
-  "Mariano Roque Alonso",
-  "Ypane",
-  "Limpio",
-  "Encarnacion",
-  "Ciudad del Este",
-  "Pedro Juan Caballero",
+  'Asuncion',
+  'Villa Morra',
+  'Recoleta',
+  'Las Mercedes',
+  'Carmelitas',
+  'Trinidad',
+  'Herrera',
+  'San Lorenzo',
+  'Lambare',
+  'Fernando de la Mora',
+  'Luque',
+  'Capiata',
+  'Aregua',
+  'Itaugua',
+  'Mariano Roque Alonso',
+  'Ypane',
+  'Limpio',
+  'Encarnacion',
+  'Ciudad del Este',
+  'Pedro Juan Caballero',
 ] as const;
 
 export function formatPrice(amount: number, currency: string): string {
-  if (currency === "PYG") {
-    return `Gs. ${amount.toLocaleString("es-PY")}`;
+  if (currency === 'PYG') {
+    return `Gs. ${amount.toLocaleString('es-PY')}`;
   }
-  return `USD ${amount.toLocaleString("en-US")}`;
+  return `USD ${amount.toLocaleString('en-US')}`;
 }

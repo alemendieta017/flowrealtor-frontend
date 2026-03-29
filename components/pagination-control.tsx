@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Pagination,
@@ -8,7 +8,7 @@ import {
   PaginationNext,
   PaginationPrevious,
   PaginationEllipsis,
-} from "@/components/ui/pagination";
+} from '@/components/ui/pagination';
 
 interface PaginationControlProps {
   currentPage: number;
@@ -47,13 +47,13 @@ export function PaginationControl({
           >
             1
           </PaginationLink>
-        </PaginationItem>
+        </PaginationItem>,
       );
       if (startPage > 2) {
         pages.push(
           <PaginationItem key="ellipsis-start">
             <PaginationEllipsis />
-          </PaginationItem>
+          </PaginationItem>,
         );
       }
     }
@@ -71,7 +71,7 @@ export function PaginationControl({
           >
             {i}
           </PaginationLink>
-        </PaginationItem>
+        </PaginationItem>,
       );
     }
 
@@ -80,7 +80,7 @@ export function PaginationControl({
         pages.push(
           <PaginationItem key="ellipsis-end">
             <PaginationEllipsis />
-          </PaginationItem>
+          </PaginationItem>,
         );
       }
       pages.push(
@@ -95,7 +95,7 @@ export function PaginationControl({
           >
             {totalPages}
           </PaginationLink>
-        </PaginationItem>
+        </PaginationItem>,
       );
     }
 
@@ -112,7 +112,7 @@ export function PaginationControl({
               if (currentPage > 1) onPageChange(currentPage - 1);
             }}
             href="#"
-            className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+            className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
           />
         </PaginationItem>
         {renderPageLinks()}
@@ -123,9 +123,7 @@ export function PaginationControl({
               if (currentPage < totalPages) onPageChange(currentPage + 1);
             }}
             href="#"
-            className={
-              currentPage >= totalPages ? "pointer-events-none opacity-50" : ""
-            }
+            className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
           />
         </PaginationItem>
       </PaginationContent>

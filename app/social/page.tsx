@@ -1,45 +1,45 @@
-"use client";
+'use client';
 
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { DataTableView } from "@/components/data-table-view";
-import { socialApi } from "@/lib/api";
-import type { SocialPost } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Image, ExternalLink, Plus } from "lucide-react";
-import Link from "next/link";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
+import { DataTableView } from '@/components/data-table-view';
+import { socialApi } from '@/lib/api';
+import type { SocialPost } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Image, ExternalLink, Plus } from 'lucide-react';
+import Link from 'next/link';
 
-const AGENT_ID = "7bc227f4-4251-4ced-873c-29df8bd7229b"; // TODO: auth
+const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b'; // TODO: auth
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  processing: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  failed: "bg-red-100 text-red-700",
+  pending: 'bg-yellow-100 text-yellow-700',
+  processing: 'bg-blue-100 text-blue-700',
+  completed: 'bg-green-100 text-green-700',
+  failed: 'bg-red-100 text-red-700',
 };
 
 const statusLabels: Record<string, string> = {
-  pending: "Pendiente",
-  processing: "Procesando",
-  completed: "Completado",
-  failed: "Fallido",
+  pending: 'Pendiente',
+  processing: 'Procesando',
+  completed: 'Completado',
+  failed: 'Fallido',
 };
 
 export default function SocialPostsPage() {
   const columns = [
     {
-      header: "Propiedad",
+      header: 'Propiedad',
       accessor: (p: SocialPost) => (
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded bg-accent/10 flex items-center justify-center flex-shrink-0">
-            <Image className="h-5 w-5 text-accent-foreground" />
+          <div className="bg-accent/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded">
+            <Image className="text-accent-foreground h-5 w-5" />
           </div>
           <div>
-            <div className="font-medium truncate max-w-[150px] sm:max-w-[250px] text-xs sm:text-sm">
-              {p.property?.title || "Sin título"}
+            <div className="max-w-[150px] truncate text-xs font-medium sm:max-w-[250px] sm:text-sm">
+              {p.property?.title || 'Sin título'}
             </div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-[10px] sm:text-xs">
               ID: {p.propertyId.slice(0, 8)}
             </div>
           </div>
@@ -47,24 +47,22 @@ export default function SocialPostsPage() {
       ),
     },
     {
-      header: "Tipo",
-      accessor: (p: SocialPost) => (
-        <span className="capitalize text-xs sm:text-sm">{p.type}</span>
-      ),
+      header: 'Tipo',
+      accessor: (p: SocialPost) => <span className="text-xs capitalize sm:text-sm">{p.type}</span>,
     },
     {
-      header: "Estado",
+      header: 'Estado',
       accessor: (p: SocialPost) => (
         <Badge
           variant="secondary"
-          className={`${statusColors[p.status] || "bg-gray-100"} border-none text-[10px] sm:text-xs`}
+          className={`${statusColors[p.status] || 'bg-gray-100'} border-none text-[10px] sm:text-xs`}
         >
           {statusLabels[p.status] || p.status}
         </Badge>
       ),
     },
     {
-      header: "Generado",
+      header: 'Generado',
       accessor: (p: SocialPost) => (
         <span className="text-muted-foreground text-[10px] sm:text-sm">
           {new Date(p.createdAt).toLocaleDateString()}
@@ -72,11 +70,11 @@ export default function SocialPostsPage() {
       ),
     },
     {
-      header: "Acciones",
+      header: 'Acciones',
       accessor: (p: SocialPost) => (
         <div className="flex items-center gap-2">
           <Link href={`/properties/${p.propertyId}`}>
-            <Button variant="outline" size="sm" className="gap-2 text-xs h-8">
+            <Button variant="outline" size="sm" className="h-8 gap-2 text-xs">
               Ver Contenido
             </Button>
           </Link>
@@ -87,7 +85,7 @@ export default function SocialPostsPage() {
           </Link>
         </div>
       ),
-      className: "text-right",
+      className: 'text-right',
     },
   ];
 
@@ -95,14 +93,14 @@ export default function SocialPostsPage() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <div className="flex-1 overflow-auto bg-muted/20">
+        <div className="bg-muted/20 flex-1 overflow-auto">
           {/* Top Bar for Consistency */}
-          <div className="border-b bg-card px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+          <div className="bg-card sticky top-0 z-10 flex items-center justify-between border-b px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="-ml-1" />
               <div>
-                <h1 className="text-lg sm:text-xl font-bold">Redes Sociales</h1>
-                <p className="hidden sm:block text-sm text-muted-foreground">
+                <h1 className="text-lg font-bold sm:text-xl">Redes Sociales</h1>
+                <p className="text-muted-foreground hidden text-sm sm:block">
                   Posteos y carousels generados
                 </p>
               </div>
@@ -116,7 +114,7 @@ export default function SocialPostsPage() {
             </Link>
           </div>
 
-          <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+          <div className="mx-auto max-w-7xl p-4 sm:p-6">
             <DataTableView<SocialPost>
               title="Mis Posteos"
               description="Contenido visual optimizado para Instagram y Facebook."

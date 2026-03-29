@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { io, Socket } from "socket.io-client";
-import { listingsApi } from "@/lib/api";
-import type { ListingStatus } from "@/lib/types";
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { listingsApi } from '@/lib/api';
+import type { ListingStatus } from '@/lib/types';
 
-export type StepStatus = "idle" | "processing" | "done" | "failed";
+export type StepStatus = 'idle' | 'processing' | 'done' | 'failed';
 
 export interface ListingProgress {
   brief: StepStatus;
@@ -15,13 +15,13 @@ export interface ListingProgress {
   complete: boolean;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export function useListingStatus(propertyId: string | null) {
   const [progress, setProgress] = useState<ListingProgress>({
-    brief: "idle",
-    social: "idle",
-    video: "idle",
+    brief: 'idle',
+    social: 'idle',
+    video: 'idle',
     videoProgress: 0,
     complete: false,
   });
@@ -43,16 +43,16 @@ export function useListingStatus(propertyId: string | null) {
 
     const socket = io(`${BACKEND_URL}/events`, {
       query: { propertyId },
-      transports: ["websocket"],
+      transports: ['websocket'],
     });
     socketRef.current = socket;
 
     socket.on(
-      "listing:progress",
+      'listing:progress',
       (payload: {
         propertyId: string;
-        step: "brief" | "social" | "video";
-        status: "processing" | "done" | "failed";
+        step: 'brief' | 'social' | 'video';
+        status: 'processing' | 'done' | 'failed';
         progress?: number;
       }) => {
         if (payload.propertyId !== propertyId) return;
@@ -60,18 +60,18 @@ export function useListingStatus(propertyId: string | null) {
           ...prev,
           [payload.step]: payload.status,
           videoProgress:
-            payload.step === "video" && payload.progress != null
+            payload.step === 'video' && payload.progress != null
               ? payload.progress
               : prev.videoProgress,
         }));
 
-        if (payload.status === "done") {
+        if (payload.status === 'done') {
           fetchStatus();
         }
       },
     );
 
-    socket.on("listing:complete", () => {
+    socket.on('listing:complete', () => {
       setProgress((prev) => ({ ...prev, complete: true }));
       fetchStatus();
     });
