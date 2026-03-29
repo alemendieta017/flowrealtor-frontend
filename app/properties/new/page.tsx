@@ -972,7 +972,7 @@ function Step2({
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 max-w-5xl mx-auto">
       <div className="text-center max-w-2xl mx-auto space-y-2">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-pretty">
           Galería de imágenes
@@ -1015,7 +1015,8 @@ function Step2({
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="flex flex-wrap gap-4 mt-8"
+                className="flex flex-wrap gap-4 mt-8 relative"
+                style={{ minHeight: '150px' }}
               >
                 {form.uploadedImages.map((img, index) => (
                   <Draggable key={img.id} draggableId={img.id} index={index}>
@@ -1026,14 +1027,17 @@ function Step2({
                         {...provided.dragHandleProps}
                         style={{
                           ...provided.draggableProps.style,
-                          opacity: snapshot.isDragging ? 0.8 : 1,
+                          opacity: snapshot.isDragging ? 0.9 : 1,
                         }}
-                        className="relative group w-36 h-36 rounded-xl overflow-hidden border-2 bg-card shadow-lg ring-primary/50 transition-colors hover:border-primary"
+                        className={cn(
+                          "relative group w-36 h-36 rounded-xl overflow-hidden border-2 bg-card shadow-lg",
+                          snapshot.isDragging ? "border-primary" : "hover:border-primary/50"
+                        )}
                       >
                         <img
                           src={img.url}
-                          alt="Property"
-                          className="absolute inset-0 w-full h-full object-cover scale-101 pointer-events-none"
+                          alt="Thumbnail"
+                          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                           <GripVertical className="h-8 w-8 text-white" />
@@ -1046,10 +1050,11 @@ function Step2({
                         <button
                           type="button"
                           onClick={(e) => {
+                            e.preventDefault()
                             e.stopPropagation()
                             removeImage(img.id)
                           }}
-                          className="absolute top-2 right-2 bg-destructive/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-destructive z-30"
+                          className="absolute top-2 right-2 bg-destructive/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-destructive z-30 flex items-center justify-center"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>

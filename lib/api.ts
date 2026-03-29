@@ -36,17 +36,24 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    let msgStr = error.message;
-    if (msgStr && typeof msgStr === 'object' && !Array.isArray(msgStr)) {
-      msgStr = msgStr.message || JSON.stringify(msgStr);
+    const text = await res.text().catch(() => "");
+    let msgStr: any = "";
+    try {
+      const error = text ? (JSON.parse(text) as any) : { message: res.statusText };
+      msgStr = error.message;
+      if (msgStr && typeof msgStr === "object" && !Array.isArray(msgStr)) {
+        msgStr = msgStr.message || JSON.stringify(msgStr);
+      }
+    } catch {
+      msgStr = text || res.statusText;
     }
     const finalMsg = Array.isArray(msgStr)
       ? msgStr.join(", ")
       : msgStr || `HTTP ${res.status}`;
     throw new Error(finalMsg);
   }
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : ({} as T);
 }
 
 function toQueryString(params: Record<string, any>): string {

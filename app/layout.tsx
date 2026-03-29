@@ -15,7 +15,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "flowRealtor — Marketing Inmobiliario con IA",
   description:
-    "Generá automáticamente PDF, publicaciones y video para tus propiedades con inteligencia artificial.",
+    "Generá automáticamente PDF, publicaciones y video para tus propiedades",
   icons: {
     icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
   },
