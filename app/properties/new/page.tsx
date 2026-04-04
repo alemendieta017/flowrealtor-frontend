@@ -80,7 +80,7 @@ function PropertyPageContent() {
             : 'pointer-events-none -translate-y-full opacity-0',
         )}
       >
-        <div className="mx-auto max-w-5xl">
+        <div className={cn("mx-auto transition-all duration-300", step === 4 ? "max-w-7xl" : "max-w-5xl")}>
           <div className="flex items-center justify-between px-4 py-4 sm:px-6">
             <div>
               <h1 className="text-lg font-bold tracking-tight sm:text-xl">Nueva Propiedad</h1>
@@ -127,7 +127,7 @@ function PropertyPageContent() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className={cn("mx-auto px-4 py-6 sm:px-6 sm:py-8 transition-all duration-300", step === 4 ? "max-w-7xl" : "max-w-5xl")}>
         {error && (
           <div className="bg-destructive/10 border-destructive/20 text-destructive mb-6 flex items-start gap-2 rounded-lg border p-4 text-sm">
             <Info className="mt-0.5 h-4 w-4 shrink-0" /> <span>{error}</span>

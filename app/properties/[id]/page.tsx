@@ -412,7 +412,7 @@ export default function PropertyDetailsPage() {
             : 'pointer-events-none -translate-y-full opacity-0',
         )}
       >
-        <div className="mx-auto flex max-w-6xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className={cn("mx-auto flex flex-col justify-between gap-4 sm:flex-row sm:items-center transition-all duration-300", mainTab === 'estudio' ? "max-w-7xl" : "max-w-6xl")}>
           <div className="flex items-center gap-2 overflow-hidden sm:gap-3">
             <Button
               variant="ghost"
@@ -449,7 +449,7 @@ export default function PropertyDetailsPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <div className={cn("mx-auto px-4 py-6 sm:px-6 transition-all duration-300", mainTab === 'estudio' ? "max-w-7xl" : "max-w-6xl")}>
         <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
           <TabsList className="mb-8 grid w-full grid-cols-2">
             <TabsTrigger value="resultados" className="text-xs sm:text-sm">

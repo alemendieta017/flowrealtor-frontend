@@ -280,9 +280,10 @@ export function CreativeStudio({
 
   const scale = useMemo(() => {
     if (!containerSize.w || !containerSize.h) return 0.3;
-    const PADDING_BUFFER = 60;
-    const availableW = containerSize.w - PADDING_BUFFER;
-    const availableH = containerSize.h - PADDING_BUFFER;
+    const isMobile = containerSize.w < 768;
+    const PADDING_BUFFER = isMobile ? 32 : 60;
+    const availableW = Math.max(0, containerSize.w - PADDING_BUFFER);
+    const availableH = Math.max(0, containerSize.h - PADDING_BUFFER);
     return Math.min(availableW / previewSize.w, availableH / previewSize.h);
   }, [containerSize, previewSize]);
 
@@ -324,7 +325,7 @@ export function CreativeStudio({
         />
       </div>
 
-      <div className="custom-scrollbar order-3 flex w-full shrink-0 flex-col gap-4 pr-0 lg:order-2 lg:w-[400px] lg:overflow-y-auto lg:pr-2">
+      <div className="custom-scrollbar order-3 flex w-full shrink-0 flex-col gap-4 pr-0 lg:order-2 lg:w-[380px] lg:overflow-y-auto lg:pr-2">
         <Accordion type="multiple" defaultValue={['content', 'design']} className="space-y-3">
           <AccordionItem value="media" className="bg-card rounded-xl border px-4">
             <AccordionTrigger className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
@@ -607,7 +608,7 @@ export function CreativeStudio({
       </div>
 
       <div
-        className="relative order-2 flex min-h-[400px] flex-1 flex-col overflow-hidden rounded-[2.5rem] border-[6px] border-white bg-[#ebeef2] shadow-2xl lg:order-3 lg:min-h-[600px]"
+        className="relative order-2 flex min-h-[500px] flex-1 flex-col overflow-hidden rounded-[2.5rem] border-[6px] border-white bg-[#ebeef2] shadow-2xl lg:order-3 lg:min-h-[600px]"
         style={{ perspective: '1000px' }}
       >
         {isGeneratingPreview && (
@@ -623,7 +624,7 @@ export function CreativeStudio({
 
         <div
           ref={containerRef}
-          className="relative z-10 flex w-full flex-1 items-center justify-center px-6 py-10 lg:py-16"
+          className="relative z-10 flex w-full flex-1 items-center justify-center px-4 py-8 lg:px-6 lg:py-16"
         >
           {activeTab === 'video' ? (
             <div className="text-muted-foreground rounded-full bg-white/50 px-8 py-4 text-xs font-bold tracking-widest uppercase shadow-sm">
@@ -631,13 +632,16 @@ export function CreativeStudio({
             </div>
           ) : previewHtml ? (
             <div
-              className="pointer-events-none relative overflow-hidden bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-transform duration-300"
+              className="pointer-events-none relative overflow-hidden bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-300"
               style={{
                 width: `${previewSize.w}px`,
                 height: `${previewSize.h}px`,
                 transform: `scale(${scale})`,
-                transformOrigin: 'center center !important',
+                transformOrigin: 'center center',
                 position: 'absolute',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <iframe
@@ -661,7 +665,7 @@ export function CreativeStudio({
                   key={slide}
                   onClick={() => setActiveSlide(slide)}
                   className={cn(
-                    'min-w-[80px] shrink-0 rounded-xl border-2 px-4 py-2.5 text-[10px] font-black uppercase transition-all',
+                    'min-w-[70px] shrink-0 rounded-xl border-2 px-2.5 py-2 text-[8px] font-black uppercase transition-all lg:min-w-[80px] lg:px-4 lg:py-2.5 lg:text-[10px]',
                     activeSlide === slide
                       ? 'bg-primary border-primary shadow-primary/25 scale-105 text-white shadow-lg'
                       : 'text-muted-foreground border-transparent bg-transparent hover:bg-black/5',
