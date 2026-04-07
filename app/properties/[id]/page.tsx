@@ -211,13 +211,7 @@ export default function PropertyDetailsPage() {
     let subPath = 'raw';
     if (activeTemplate.type === 'SOCIAL') subPath = `raw?slide=${activeSlide}`;
 
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/templates/${activeTemplate.id}/${subPath}`,
-      {
-        headers: { Accept: 'text/plain' },
-      },
-    )
-      .then((r) => r.text())
+    templatesApi.getRaw(activeTemplate.id, activeTemplate.type === 'SOCIAL' ? activeSlide : null)
       .then((rawStr) => {
         if (!mounted) return;
         try {

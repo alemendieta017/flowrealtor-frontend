@@ -19,6 +19,7 @@ import {
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import Handlebars from 'handlebars';
 import { cn } from '@/lib/utils';
+import { templatesApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -253,10 +254,7 @@ export function CreativeStudio({
     if (templateCache.current[cacheKey]) {
       generatePreview(templateCache.current[cacheKey]);
     } else {
-      fetch(`${apiUrl}/api/templates/${activeTemplate.id}/${subPath}`, {
-        headers: { Accept: 'text/plain' },
-      })
-        .then((r) => r.text())
+      templatesApi.getRaw(activeTemplate.id, activeTemplate.type === 'SOCIAL' ? activeSlide : null)
         .then((rawStr) => {
           if (mounted) {
             templateCache.current[cacheKey] = rawStr;

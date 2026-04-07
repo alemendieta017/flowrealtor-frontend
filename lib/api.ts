@@ -31,10 +31,19 @@ export interface PaginationParams {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const isFormData = options?.body instanceof FormData;
+  const headers = { ...options?.headers } as Record<string, string>;
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const res = await fetch(`${BASE_URL}/api${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    credentials: 'include',
     ...options,
+    headers,
   });
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     let msgStr: any = '';
@@ -50,6 +59,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const finalMsg = Array.isArray(msgStr) ? msgStr.join(', ') : msgStr || `HTTP ${res.status}`;
     throw new Error(finalMsg);
   }
+
+  if (headers['Accept'] === 'text/plain') {
+    return (await res.text()) as any;
+  }
+
   const text = await res.text();
   return text ? JSON.parse(text) : ({} as T);
 }
@@ -78,18 +92,18 @@ export const agentsApi = {
   uploadLogo: (id: string, file: File) => {
     const form = new FormData();
     form.append('file', file);
-    return fetch(`${BASE_URL}/api/agents/${id}/logo`, {
+    return request<Agent>(`/agents/${id}/logo`, {
       method: 'POST',
       body: form,
-    }).then((r) => r.json() as Promise<Agent>);
+    });
   },
   uploadPhoto: (id: string, file: File) => {
     const form = new FormData();
     form.append('file', file);
-    return fetch(`${BASE_URL}/api/agents/${id}/photo`, {
+    return request<Agent>(`/agents/${id}/photo`, {
       method: 'POST',
       body: form,
-    }).then((r) => r.json() as Promise<Agent>);
+    });
   },
 };
 
@@ -113,10 +127,10 @@ export const propertiesApi = {
   uploadImages: (id: string, files: File[]) => {
     const form = new FormData();
     files.forEach((f) => form.append('files', f));
-    return fetch(`${BASE_URL}/api/properties/${id}/images`, {
+    return request<PropertyImage[]>(`/properties/${id}/images`, {
       method: 'POST',
       body: form,
-    }).then((r) => r.json() as Promise<PropertyImage[]>);
+    });
   },
   deleteImage: (id: string, imageId: string) =>
     request<void>(`/properties/${id}/images/${imageId}`, {
@@ -132,15 +146,14 @@ export const propertiesApi = {
 // ---- TEMPLATES ----
 export const templatesApi = {
   getAll: () => request<Template[]>('/templates'),
-  getRaw: (id: string) =>
-    request<string>(`/templates/${id}/raw`, {
+  getRaw: (id: string, slide?: string | null) => {
+    const path = `/templates/${id}/raw${slide ? `?slide=${slide}` : ''}`;
+    return request<string>(path, {
       headers: {
         Accept: 'text/plain',
       },
-    }).catch((e) => {
-      // If request tries to parse JSON and fails, we might need a custom fetch for raw text
-      return fetch(`${BASE_URL}/api/templates/${id}/raw`).then((r) => r.text());
-    }),
+    });
+  },
 };
 
 // ---- CONTENT ----
