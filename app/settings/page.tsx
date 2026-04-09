@@ -11,10 +11,10 @@ import { agentsApi } from '@/lib/api';
 import type { Agent } from '@/lib/types';
 import { Loader2, Save, Upload, User, Palette, Link as LinkIcon, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b'; // TODO: auth
+import { useAuth } from '@/contexts/auth-context';
 
 export default function SettingsPage() {
+  const { user: authUser, isLoading: authLoading } = useAuth();
   const [agent, setAgent] = useState<Agent | null>(null);
   const [form, setForm] = useState({
     name: '',
@@ -34,13 +34,16 @@ export default function SettingsPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
-    loadAgent();
-  }, []);
+    if (authUser) {
+      loadAgent();
+    }
+  }, [authUser]);
 
   async function loadAgent() {
+    if (!authUser) return;
     setLoading(true);
     try {
-      const a = await agentsApi.get(AGENT_ID);
+      const a = await agentsApi.get(authUser.id);
       setAgent(a);
       setForm({
         name: a.name ?? '',
@@ -64,6 +67,7 @@ export default function SettingsPage() {
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
   async function handleSave() {
+    if (!authUser) return;
     setSaving(true);
     try {
       const payload = {
@@ -85,9 +89,9 @@ export default function SettingsPage() {
 
       let updated: Agent;
       if (agent) {
-        updated = await agentsApi.update(AGENT_ID, payload);
+        updated = await agentsApi.update(authUser.id, payload);
       } else {
-        updated = await agentsApi.create({ ...payload, id: AGENT_ID });
+        updated = await agentsApi.create({ ...payload, id: authUser.id });
       }
       setAgent(updated);
 
@@ -107,6 +111,14 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  if (authLoading || !authUser) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (

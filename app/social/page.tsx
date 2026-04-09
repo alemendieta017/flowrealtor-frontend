@@ -7,10 +7,9 @@ import { socialApi } from '@/lib/api';
 import type { SocialPost } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Image, ExternalLink, Plus } from 'lucide-react';
+import { Image, ExternalLink, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-
-const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b'; // TODO: auth
+import { useAuth } from '@/contexts/auth-context';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -27,6 +26,8 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function SocialPostsPage() {
+  const { user, isLoading } = useAuth();
+
   const columns = [
     {
       header: 'Propiedad',
@@ -89,6 +90,14 @@ export default function SocialPostsPage() {
     },
   ];
 
+  if (isLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -119,7 +128,7 @@ export default function SocialPostsPage() {
               title="Mis Posteos"
               description="Contenido visual optimizado para Instagram y Facebook."
               columns={columns}
-              fetchData={(params) => socialApi.list(AGENT_ID, params)}
+              fetchData={(params) => socialApi.list(user.id, params)}
               searchPlaceholder="Filtrar por propiedad..."
             />
           </div>

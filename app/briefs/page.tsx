@@ -7,10 +7,9 @@ import { briefsApi } from '@/lib/api';
 import type { Brief } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, ExternalLink, Plus } from 'lucide-react';
+import { Download, FileText, ExternalLink, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-
-const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b'; // TODO: auth
+import { useAuth } from '@/contexts/auth-context';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -27,6 +26,8 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function BriefsPage() {
+  const { user, isLoading } = useAuth();
+
   const columns = [
     {
       header: 'Propiedad',
@@ -100,6 +101,14 @@ export default function BriefsPage() {
     },
   ];
 
+  if (isLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -130,7 +139,7 @@ export default function BriefsPage() {
               title="Mis Briefs"
               description="Lista de PDFs generados para tus propiedades."
               columns={columns}
-              fetchData={(params) => briefsApi.list(AGENT_ID, params)}
+              fetchData={(params) => briefsApi.list(user.id, params)}
               searchPlaceholder="Filtrar por propiedad..."
             />
           </div>

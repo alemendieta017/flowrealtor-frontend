@@ -7,10 +7,9 @@ import { propertiesApi } from '@/lib/api';
 import { formatPrice, type Property } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Eye, MapPin, Plus } from 'lucide-react';
+import { Building2, Eye, MapPin, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-
-const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b'; // TODO: auth
+import { useAuth } from '@/contexts/auth-context';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-700',
@@ -27,6 +26,8 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function PropertiesPage() {
+  const { user, isLoading } = useAuth();
+
   const columns = [
     {
       header: 'Propiedad',
@@ -101,6 +102,14 @@ export default function PropertiesPage() {
     },
   ];
 
+  if (isLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -131,7 +140,7 @@ export default function PropertiesPage() {
               title="Mis Propiedades"
               description="Gestioná todas tus propiedades cargadas."
               columns={columns}
-              fetchData={(params) => propertiesApi.list(AGENT_ID, params)}
+              fetchData={(params) => propertiesApi.list(user.id, params)}
               searchPlaceholder="Buscar por título o barrio..."
               filters={[
                 {

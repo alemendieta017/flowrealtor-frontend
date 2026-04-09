@@ -3,8 +3,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { propertiesApi, contentApi, listingsApi, templatesApi } from '@/lib/api';
 import { type PropertyContent, type Property, type Template } from '@/lib/types';
 import { initialForm, type PropertyFormData } from '@/lib/schemas/property.schema';
-
-const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b'; // TODO: replace with auth context
+import { useAuth } from '@/contexts/auth-context';
 
 export const STEPS = [
   { id: 1, label: 'Detalles' },
@@ -14,6 +13,7 @@ export const STEPS = [
 ];
 
 export function usePropertyForm() {
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -150,11 +150,15 @@ export function usePropertyForm() {
   );
 
   const handleCreateProperty = async () => {
+    if (!user) {
+      setError('Sesión no válida. Por favor, reingresa.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const data = {
-        agentId: AGENT_ID,
+        agentId: user.id,
         operationType: form.operationType as Property['operationType'],
         propertyType: form.propertyType as Property['propertyType'],
         country: form.country,

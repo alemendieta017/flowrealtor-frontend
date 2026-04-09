@@ -28,6 +28,9 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/auth-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LogOut } from 'lucide-react';
 
 const mainNavItems = [
   {
@@ -72,6 +75,15 @@ const secondaryNavItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  const userInitials = user?.name
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+    : 'U';
 
   return (
     <Sidebar className="border-border border-r">
@@ -131,7 +143,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-4">
         <div className="from-primary/20 to-accent/20 border-primary/30 rounded-lg border bg-gradient-to-br p-4">
           <div className="mb-2 flex items-center gap-2">
             <Sparkles className="text-primary h-4 w-4" />
@@ -142,6 +154,30 @@ export function AppSidebar() {
           </p>
           <Button variant="secondary" size="sm" className="w-full text-xs">
             Actualizar Plan
+          </Button>
+        </div>
+
+        <SidebarSeparator />
+
+        <div className="flex items-center justify-between gap-2 px-2">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <Avatar className="h-9 w-9 border">
+              <AvatarImage src={user?.photoUrl || ''} alt={user?.name || 'User'} />
+              <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col overflow-hidden text-left">
+              <span className="truncate text-sm font-semibold">{user?.name || 'Usuario'}</span>
+              <span className="text-muted-foreground truncate text-xs">{user?.email}</span>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive h-8 w-8"
+            onClick={() => logout()}
+            title="Cerrar sesión"
+          >
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </SidebarFooter>

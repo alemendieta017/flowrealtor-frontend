@@ -256,3 +256,9 @@ export const videosApi = {
     }),
   get: (propertyId: string) => request<Video>(`/videos/${propertyId}`),
 };
+
+// ---- AUTH ----
+export const authApi = {
+  me: () => request<Agent>('/auth/me'),
+  logout: () => request<{ message: string }>('/auth/logout', { method: 'POST' }),
+};

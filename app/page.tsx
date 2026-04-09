@@ -9,9 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { propertiesApi } from '@/lib/api';
 import { formatPrice, type Property } from '@/lib/types';
+import { useAuth } from '@/contexts/auth-context';
 import { Plus, Home, TrendingUp, Settings, Building2, MapPin, Loader2 } from 'lucide-react';
-
-const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b'; // TODO: replace with auth
 
 function PropertyCard({ property }: { property: Property }) {
   const coverImage = property.images?.[0];
@@ -83,6 +82,7 @@ function PropertyCard({ property }: { property: Property }) {
 }
 
 export default function DashboardPage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
@@ -90,9 +90,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user) return;
+
+    setLoading(true);
     // Fetch only recent 6 for display
     propertiesApi
-      .list(AGENT_ID, { limit: 6 })
+      .list(user.id, { limit: 6 })
       .then((res) => {
         setProperties(res.data);
         setTotalCount(res.meta.total);
@@ -102,13 +105,21 @@ export default function DashboardPage() {
 
     // Fetch counts (simplified for MVP)
     propertiesApi
-      .list(AGENT_ID, { limit: 100 })
+      .list(user.id, { limit: 100 })
       .then((res) => {
         setActiveCount(res.data.filter((p) => p.status === 'active').length);
         setDraftCount(res.data.filter((p) => p.status === 'draft').length);
       })
       .catch(() => {});
-  }, []);
+  }, [user]);
+
+  if (authLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   const stats = [
     {

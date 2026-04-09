@@ -7,10 +7,9 @@ import { videosApi } from '@/lib/api';
 import type { Video } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Video as VideoIcon, ExternalLink, Plus, Play } from 'lucide-react';
+import { Video as VideoIcon, ExternalLink, Plus, Play, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-
-const AGENT_ID = '7bc227f4-4251-4ced-873c-29df8bd7229b'; // TODO: auth
+import { useAuth } from '@/contexts/auth-context';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -27,6 +26,8 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function VideosPage() {
+  const { user, isLoading } = useAuth();
+
   const columns = [
     {
       header: 'Propiedad',
@@ -93,6 +94,14 @@ export default function VideosPage() {
     },
   ];
 
+  if (isLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -123,7 +132,7 @@ export default function VideosPage() {
               title="Mis Videos"
               description="Videos de alta calidad para tus propiedades."
               columns={columns}
-              fetchData={(params) => videosApi.list(AGENT_ID, params)}
+              fetchData={(params) => videosApi.list(user.id, params)}
               searchPlaceholder="Filtrar por propiedad..."
             />
           </div>

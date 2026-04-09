@@ -21,6 +21,7 @@ export function Logo({ className = '', size = 'md' }: LogoProps) {
         height={sizes[size].height}
         priority
         unoptimized
+        style={{ height: 'auto' }}
       />
     </div>
   );
